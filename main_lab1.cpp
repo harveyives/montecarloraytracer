@@ -17,7 +17,7 @@
  *
  * This will produce an image file called test.ppm. You can convert this a png file for viewing using
  *
- * pbmropng test.ppm > test.png
+ * pnmtopng test.ppm > test.png
  *
  * You are expected to replace the line drawing function with one that only uses integers and no floats.
  */

@@ -37,15 +37,14 @@ int draw_x_line(FrameBuffer *fb, int sx, int sy, int ex, int ey)
 
   while (x != ex) {
     fb->plotPixel(x, y, 1.0f, 1.0f, 1.0f);
-    x += xdir;
-    
-    if(param < 0) {
-      param = param + 2 * dy;
+    if(param > 0) {
+        param = param + 2 * dy - 2 * dx;
+        y += ydir;
     }
     else {
-      param = param + 2 * dy - 2 * dx; 
-      y += ydir;
+        param = param + 2 * dy;
     }
+    x += xdir;
   }
 }
 
@@ -68,21 +67,18 @@ int draw_y_line(FrameBuffer *fb, int sx, int sy, int ex, int ey)
   }
 
   int param = 2 * dy - dx;
-
   while (y != ey) {
     fb->plotPixel(x, y, 1.0f, 1.0f, 1.0f);
-    y += ydir;
-    
-    if(param < 0) {
-      param = param + 2 * dx;
+    if(param > 0) {
+        param = param + 2 * dx - 2 * dy;
+        x += xdir;
     }
     else {
-      param = param + 2 * dx - 2 * dy; 
-      x += xdir;
+        param = param + 2 * dx;
     }
+    y += ydir;
   }
 }
-
 
 int draw_line(FrameBuffer *fb, int sx, int sy, int ex, int ey)
 {
