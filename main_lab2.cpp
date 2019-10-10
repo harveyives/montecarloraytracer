@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
     draw_line(fb, (int)x1, (int)y1, (int)x2, (int)y2);
     draw_line(fb, (int)x2, (int)y2, (int)x0, (int)y0);
   }
-  
+
   // Output the framebuffer.
   fb->writeRGBFile((char *)"test.ppm");
 

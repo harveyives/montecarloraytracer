@@ -9,6 +9,8 @@
 
 #include "vertex.h"
 #include "transform.h"
+#include <vector>
+#include <string>
 
 typedef int TriangleIndex[3];
 
@@ -20,6 +22,7 @@ public:
 	TriangleIndex *triangle;
 
 	void do_construct(char *file, Transform *transform);
+    std::vector<std::string> split_string(std::string text);
 	
 	PolyMesh(char *file);
 	PolyMesh(char *file, Transform *transform);

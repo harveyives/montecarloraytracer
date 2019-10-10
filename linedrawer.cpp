@@ -46,6 +46,7 @@ int draw_x_line(FrameBuffer *fb, int sx, int sy, int ex, int ey)
     }
     x += xdir;
   }
+  return 0;
 }
 
 int draw_y_line(FrameBuffer *fb, int sx, int sy, int ex, int ey)
@@ -78,6 +79,7 @@ int draw_y_line(FrameBuffer *fb, int sx, int sy, int ex, int ey)
     }
     y += ydir;
   }
+  return 0;
 }
 
 int draw_line(FrameBuffer *fb, int sx, int sy, int ex, int ey)
