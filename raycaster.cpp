@@ -4,40 +4,64 @@
  *
  * Do what you like with this code as long as you retain this comment.
  */
-
-
-
+#include <iostream>
 #include "framebuffer.h"
 #include "linedrawer.h"
 #include "polymesh.h"
+#include "sphere.h"
+#include "camera.h"
+#include "vertex.h"
+#include "vector.h"
+#include <float.h>
+
+using namespace std;
 
 int main(int argc, char *argv[])
 {
   // Create a framebuffer
   FrameBuffer *fb = new FrameBuffer(2048,2048);
 
-  // The following transform allows 4D homogeneous coordinates to be transformed. It moves the supplied teapot model to somewhere visible.
-  Transform *transform = new Transform(1.0f, 0.0f, 0.0f, 0.0f,0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 7.0f,0.0f,0.0f,0.0f,1.0f);
-
   // Read in the teapot model.
-  PolyMesh *pm = new PolyMesh((char *)"teapot.ply", transform);
+//  PolyMesh *pm = new PolyMesh((char *)"teapot.ply", transform);
 
-  // For each triangle in the model,
-  for (int i = 0; i< pm->triangle_count; i += 1)
+  Vertex eye = Vertex(0,0,0);
+  Vertex look = Vertex(1,0,0);
+  Vector up = Vector(0,1,0);
+  float d = 6;
+
+  //change this to fov ?
+
+  float s = 0.1;//tan(deg2rad(fov * 0.5));
+
+  Camera *camera = new Camera(eye, look, up, d);
+
+  std::cout << "w: ("<< camera->w.x << ", " << camera->w.y << ", " << camera->w.z << ")" << std::endl;
+  std::cout << "u: ("<< camera->u.x << ", " << camera->u.y << ", " << camera->u.z << ")" << std::endl;
+  std::cout << "v: ("<< camera->v.x << ", " << camera->v.y << ", " << camera->v.z << ")" << std::endl;
+  int width = 2048;
+  int height = 2048;
+
+  Vertex sphereC = Vertex(10,0,0);
+  Sphere *sphere = new Sphere(sphereC, 9);
+  for(int c = 0; c < width; c++)
   {
-    // The following lines project the point onto the 2D image from 3D space.
-    float x0 = (pm->vertex[pm->triangle[i][0]].x/pm->vertex[pm->triangle[i][0]].z)*2000.0 + 1024.0;
-    float y0 = (pm->vertex[pm->triangle[i][0]].y/pm->vertex[pm->triangle[i][0]].z)*-2000.0 + 1024.0;
-    float x1 = (pm->vertex[pm->triangle[i][1]].x/pm->vertex[pm->triangle[i][1]].z)*2000.0 + 1024.0;
-    float y1 = (pm->vertex[pm->triangle[i][1]].y/pm->vertex[pm->triangle[i][1]].z)*-2000.0 + 1024.0;
-    float x2 = (pm->vertex[pm->triangle[i][2]].x/pm->vertex[pm->triangle[i][2]].z)*2000.0 + 1024.0;
-    float y2 = (pm->vertex[pm->triangle[i][2]].y/pm->vertex[pm->triangle[i][2]].z)*-2000.0 + 1024.0;
+      for(int r = 0; r < height; r++)
+      {
 
-    // then draw the three edges.
-    draw_line(fb, (int)x0, (int)y0, (int)x1, (int)y1);
-    draw_line(fb, (int)x1, (int)y1, (int)x2, (int)y2);
-    draw_line(fb, (int)x2, (int)y2, (int)x0, (int)y0);
+          float xv = s * (c - width * 0.5);
+          float yv = s * (r - height * 0.5);
+          Vector D = camera->u * xv + camera->v * yv - camera->w * d;
+          D.normalise();
+          Ray ray = Ray(eye, D);
+          Hit hit = Hit();
+          sphere->intersection(ray, hit);
+          //hit.position.magnitude();
+          if(hit.flag == true) {
+              fb->plotPixel(c, r, 1.0f, 1.0f, 1.0f);
+          }
+      }
   }
+
 
   // Output the framebuffer.
   fb->writeRGBFile((char *)"test.ppm");
