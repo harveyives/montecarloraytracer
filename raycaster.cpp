@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 
   //change this to fov ?
 
-  float s = 0.1;//tan(deg2rad(fov * 0.5));
+  float s = 0.025;//tan(deg2rad(fov * 0.5));
 
   Camera *camera = new Camera(eye, look, up, d);
 
@@ -55,16 +55,18 @@ int main(int argc, char *argv[])
           Ray ray = Ray(eye, D);
           Hit hit = Hit();
           sphere->intersection(ray, hit);
-          //hit.position.magnitude();
+//          cout<<hit.position.magnitude();
+
           if(hit.flag == true) {
-              fb->plotPixel(c, r, 1.0f, 1.0f, 1.0f);
+//              fb->plotPixel(c, r, 1.0f, 1.0f, 1.0f);
+              fb->plotDepth(c, r, hit.position.magnitude());
           }
       }
   }
 
 
   // Output the framebuffer.
-  fb->writeRGBFile((char *)"test.ppm");
+  fb->writeDepthFile((char *)"test.ppm");
 
   return 0;
   
