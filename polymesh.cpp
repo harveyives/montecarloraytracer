@@ -75,8 +75,60 @@ void PolyMesh::do_construct(char *file, Transform *transform)
 vector<string> PolyMesh::split_string(string line) {
     istringstream ss(line);
     istream_iterator<string> begin(ss), end;
+    vector<string> arr(begin, end);
+    return arr;
+}
 
-    //putting all the tokens in the vector
-    vector<string> array(begin, end);
-    return array;
+void PolyMesh::intersection(Ray ray, Hit &hit) {
+    hit.flag = false;
+    hit.t = MAXFLOAT;
+    float epislon = 0.0000001;
+
+    //for each triangle, check the intersections
+    for(int i = 0; i < triangle_count; i++) {
+        //Moller Trombore Algorithm for triangle intersection
+        // barycentric:     p = wA + uB + vC
+        // ray:             p = o + tD
+        // convert to tuv space and solve
+        Vertex a = vertex[triangle[i][0]];
+        Vertex b = vertex[triangle[i][1]];
+        Vertex c = vertex[triangle[i][2]];
+
+        Vector ac = c - a;
+        Vector ab = b - a;
+        Vector pvec;
+        ray.direction.cross(ab, pvec);
+        float determinant = ac.dot(pvec);
+
+        //if very close to zero, will not hit the triangle
+        if(fabs(determinant) < epislon)
+            continue;
+
+        float inverseDeterminant = 1 / determinant;
+
+        //converting to tuv space
+        Vector tvec = Vertex(0,0,0) - a;
+
+        float u = tvec.dot(pvec) * inverseDeterminant;
+        if (u < 0 || u > 1)
+            continue;
+
+        Vector qvec;
+        tvec.cross(ac, qvec);
+        float v = ray.direction.dot(qvec) * inverseDeterminant;
+        if (v < 0 || u + v > 1)
+            continue;
+
+        float t = ab.dot(qvec) * inverseDeterminant;
+        if(t < hit.t){
+            hit.t = t;
+            hit.position.x = ray.position.x + t * ray.direction.x;
+            hit.position.y = ray.position.y + t * ray.direction.y;
+            hit.position.z = ray.position.z + t * ray.direction.z;
+            //triangle normal
+            ab.cross(ac, hit.normal);
+            hit.normal.normalise();
+        }
+        hit.flag = true;
+    }
 }

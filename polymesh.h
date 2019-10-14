@@ -9,6 +9,8 @@
 
 #include "vertex.h"
 #include "transform.h"
+#include "ray.h"
+#include "hit.h"
 #include <vector>
 #include <string>
 
@@ -21,9 +23,9 @@ public:
         Vertex *vertex;
 	TriangleIndex *triangle;
 
-	void do_construct(char *file, Transform *transform);
     std::vector<std::string> split_string(std::string text);
-	
-	PolyMesh(char *file);
-	PolyMesh(char *file, Transform *transform);
+    void intersection(Ray ray, Hit &hit);
+    void do_construct(char *file, Transform *transform);
+    PolyMesh(char *file);
+    PolyMesh(char *file, Transform *transform);
 };

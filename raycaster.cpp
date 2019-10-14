@@ -18,47 +18,49 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+    int width = 100;
+    int height = 100;
   // Create a framebuffer
-  FrameBuffer *fb = new FrameBuffer(2048,2048);
+  FrameBuffer *fb = new FrameBuffer(width,height);
+
+  // The following transform allows 4D homogeneous coordinates to be transformed. It moves the supplied teapot model to somewhere visible.
+  Transform *transform = new Transform(1.0f, 0.0f, 0.0f, 0.0f,0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 7.0f,0.0f,0.0f,0.0f,1.0f);
 
   // Read in the teapot model.
-//  PolyMesh *pm = new PolyMesh((char *)"teapot.ply", transform);
+  PolyMesh *pm = new PolyMesh((char *)"teapot.ply", transform);
 
   Vertex eye = Vertex(0,0,0);
-  Vertex look = Vertex(1,0,0);
-  Vector up = Vector(0,1,0);
-  float d = 6;
+  Vertex look = Vertex(0,0,1);
+  Vector up = Vector(0,-1,0);
 
-  //change this to fov ?
+  float d = 1;
 
-  float s = 0.025;//tan(deg2rad(fov * 0.5));
+  float fov = 90;
+  //TODO move this to the camera
+  float fovRadians = M_PI * (fov / 2) / 180;
+  float aspect_ratio = height / width;
+
+  float half_width = tan(fovRadians);
+  float half_height = aspect_ratio * half_width;
+
+  float pixel_width = half_width * 2 / (width - 1.0);
+  float pixel_height = half_height * 2 / (height - 1.0);
 
   Camera *camera = new Camera(eye, look, up, d);
 
-  std::cout << "w: ("<< camera->w.x << ", " << camera->w.y << ", " << camera->w.z << ")" << std::endl;
-  std::cout << "u: ("<< camera->u.x << ", " << camera->u.y << ", " << camera->u.z << ")" << std::endl;
-  std::cout << "v: ("<< camera->v.x << ", " << camera->v.y << ", " << camera->v.z << ")" << std::endl;
-  int width = 2048;
-  int height = 2048;
-
-  Vertex sphereC = Vertex(10,0,0);
-  Sphere *sphere = new Sphere(sphereC, 9);
+  Sphere *sphere = new Sphere(Vertex(200,0,0), 160);
   for(int c = 0; c < width; c++)
   {
       for(int r = 0; r < height; r++)
       {
+          float xv = (c * pixel_width) - half_width;
+          float yv = (r * pixel_height) - half_height;
 
-          float xv = s * (c - width * 0.5);
-          float yv = s * (r - height * 0.5);
-          Vector D = camera->u * xv + camera->v * yv - camera->w * d;
-          D.normalise();
-          Ray ray = Ray(eye, D);
+          Ray ray = Ray(eye, camera->get_ray_direction(xv,yv));
           Hit hit = Hit();
-          sphere->intersection(ray, hit);
-//          cout<<hit.position.magnitude();
 
-          if(hit.flag == true) {
-//              fb->plotPixel(c, r, 1.0f, 1.0f, 1.0f);
+          pm->intersection(ray, hit);
+          if(hit.flag) {
               fb->plotDepth(c, r, hit.position.magnitude());
           }
       }
@@ -66,6 +68,7 @@ int main(int argc, char *argv[])
 
 
   // Output the framebuffer.
+//  fb->writeRGBFile((char *)"test.ppm");
   fb->writeDepthFile((char *)"test.ppm");
 
   return 0;

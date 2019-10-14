@@ -156,7 +156,7 @@ int FrameBuffer::writeDepthFile(char *filename)
 
   for (int j = 0; j<  this->width*this->height; j += 1)
   {
-    unsigned char pd = (unsigned char)((this->framebuffer[j].red-min/diff)*255.0);
+    unsigned char pd = (unsigned char)(((this->framebuffer[j].depth-min)/diff)*255.0);
     outfile << pd << pd << pd;
   }
   

@@ -70,7 +70,7 @@ public:
 		z = -z;
 	}
 
-	void cross(Vector &other, Vector &result)
+	Vector cross(Vector &other, Vector &result)
 	{
 	  result.x = y*other.z - z*other.y;
 	  result.y = z*other.x - x*other.z;

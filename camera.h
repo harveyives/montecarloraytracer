@@ -18,4 +18,6 @@ public:
     Vector v;
 
     Camera(Vertex eye, Vertex look, Vector up, double d);
+
+    Vector get_ray_direction(float xv, float yv);
 };

@@ -7,6 +7,9 @@
 
 #pragma once
 
+#include <cmath>
+#include "vector.h"
+
 class Vertex {
 public:
 	float x;
@@ -37,4 +40,23 @@ public:
 		z = pz;
 		w = 1.0f;
 	}
+
+	Vector toVector() {
+	    return {x,y,z};
+	}
+
+    Vector operator - (Vertex v)
+    {
+        return {x - v.x,y - v.y,z - v.z};
+    }
+
+    Vector operator + (Vertex v)
+    {
+        return {x + v.x,y + v.y,z + v.z};
+    }
+
+    float magnitude()
+    {
+        return sqrt(x * x + y * y + z * z);
+    }
 };

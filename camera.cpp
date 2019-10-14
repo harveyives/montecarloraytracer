@@ -19,3 +19,10 @@ Camera::Camera(Vertex eye, Vertex look, Vector up, double d){
 
     Camera::w.cross(Camera::u, Camera::v);
 }
+
+Vector Camera::get_ray_direction(float xv, float yv) {
+    Vector D = u * xv + v * yv - w * d;
+    D.normalise();
+
+    return D;
+}
