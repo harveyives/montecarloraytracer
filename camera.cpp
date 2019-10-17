@@ -5,7 +5,7 @@
 #include "vector.h"
 #include "vertex.h"
 
-Camera::Camera(Vertex eye, Vertex look, Vector up, double d){
+Camera::Camera(Vertex eye, Vertex look, Vector up, double d, float fov, int height, int width) {
     Camera::eye = eye;
     Camera::look = look;
     Camera::up = up;
@@ -18,9 +18,22 @@ Camera::Camera(Vertex eye, Vertex look, Vector up, double d){
     u.normalise();
 
     Camera::w.cross(Camera::u, Camera::v);
+
+    Camera::fov_radians = M_PI * (fov / 2) / 180;
+    Camera::aspect_ratio = height / width;
+
+    Camera::half_width = tan(fov_radians);
+    Camera::half_height = aspect_ratio * half_width;
+
+    Camera::pixel_width = half_width * 2 / (width - 1.0);
+    Camera::pixel_height = half_height * 2 / (height - 1.0);
 }
 
-Vector Camera::get_ray_direction(float xv, float yv) {
+Vector Camera::get_ray_direction(int xv, int yv) {
+    float xv = (xv * Camera::pixel_width) - Camera::half_width;
+    float yv = (yv * Camera::pixel_height) - Camera::half_height;
+
+
     Vector D = u * xv + v * yv - w * d;
     D.normalise();
 

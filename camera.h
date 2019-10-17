@@ -17,7 +17,17 @@ public:
     Vector u;
     Vector v;
 
-    Camera(Vertex eye, Vertex look, Vector up, double d);
 
-    Vector get_ray_direction(float xv, float yv);
+    float fov_radians;
+    float aspect_ratio;
+
+    float half_width;
+    float half_height;
+
+    float pixel_width;
+    float pixel_height;
+
+    Camera(Vertex eye, Vertex look, Vector up, double d, float fov, int height, int width);
+
+    Vector get_ray_direction(int xv, int yv);
 };
