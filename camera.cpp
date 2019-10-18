@@ -29,9 +29,9 @@ Camera::Camera(Vertex eye, Vertex look, Vector up, double d, float fov, int heig
     Camera::pixel_height = half_height * 2 / (height - 1.0);
 }
 
-Vector Camera::get_ray_direction(int xv, int yv) {
-    float xv = (xv * Camera::pixel_width) - Camera::half_width;
-    float yv = (yv * Camera::pixel_height) - Camera::half_height;
+Vector Camera::get_ray_direction(int x, int y) {
+    float xv = (x * Camera::pixel_width) - Camera::half_width;
+    float yv = (y * Camera::pixel_height) - Camera::half_height;
 
 
     Vector D = u * xv + v * yv - w * d;
