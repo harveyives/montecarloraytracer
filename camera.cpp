@@ -33,7 +33,6 @@ Vector Camera::get_ray_direction(int x, int y) {
     float xv = (x * Camera::pixel_width) - Camera::half_width;
     float yv = (y * Camera::pixel_height) - Camera::half_height;
 
-
     Vector D = u * xv + v * yv - w * d;
     D.normalise();
 

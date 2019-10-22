@@ -8,16 +8,18 @@
 #include "transform.h"
 #include "polymesh.h"
 #include "vector.h"
+#include "light.h"
 
 class Scene {
 public:
     std::vector<Object*> objects;
+    std::vector<Light*> lights;
     float ka;
 
     Scene(float ambient = 1) {
         ka = ambient;
 
-        //generally adding objects:
+        // adding objects:
         Transform *transform = new Transform(1.0f, 0.0f, 0.0f, 0.0f,0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 7.0f,0.0f,0.0f,0.0f,1.0f);
         PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Vector(0,255, 0));
         Sphere *sphere = new Sphere(Vertex(3, 3, 10), 2, Vector(255,0,0));
@@ -26,6 +28,12 @@ public:
         objects.push_back(pm);
         objects.push_back(sphere2);
         objects.push_back(sphere);
+
+        //adding lights:
+        Light *l1 = new Light(Vertex(0,0,0), Vector(-2,3,-1));
+
+
+        lights.push_back(l1);
     };
 };
 #endif //CODE_SCENE_H
