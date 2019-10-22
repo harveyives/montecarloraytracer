@@ -11,13 +11,16 @@
 
 #include "ray.h"
 #include "hit.h"
+#include "colour.h"
 
 class Object {
 public:
+    Colour colour;
 
+	Object() = default;
 
-	Object()
-	{
+	Object(Colour c) {
+	    colour = c;
 	}
 	
 	virtual void intersection(Ray ray, Hit &hit)

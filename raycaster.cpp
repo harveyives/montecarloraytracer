@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
           Ray ray = Ray(eye, camera->get_ray_direction(c, r));
           Hit hit = Hit();
           hit.t = MAXFLOAT;
+          Object *closest = nullptr;
 
           for (Object *obj : scene->objects) {
               Hit obj_hit = Hit();
@@ -42,6 +43,7 @@ int main(int argc, char *argv[])
               if(obj_hit.flag) {
                   if(obj_hit.t < hit.t) {
                       hit = obj_hit;
+                      closest = obj;
                   }
               }
           }

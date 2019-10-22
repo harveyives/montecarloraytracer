@@ -22,7 +22,7 @@ class PolyMesh : public Object {
 public:
 	int vertex_count;
 	int triangle_count;
-        Vertex *vertex;
+	Vertex *vertex;
 	TriangleIndex *triangle;
 
     std::vector<std::string> split_string(std::string text);
@@ -30,4 +30,5 @@ public:
     void do_construct(char *file, Transform *transform);
     PolyMesh(char *file);
     PolyMesh(char *file, Transform *transform);
+    PolyMesh(char *file, Transform *transform, Colour colour);
 };

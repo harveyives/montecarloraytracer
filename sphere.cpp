@@ -7,13 +7,7 @@
 
 #include "sphere.h"
 #include <math.h>
-
-
-Sphere::Sphere(Vertex c, float r)
-{
-	center = c;
-	radius = r;
-}
+#include <vector>
 
 void Sphere::intersection(Ray ray, Hit &hit)
 {

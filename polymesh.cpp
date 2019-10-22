@@ -17,16 +17,16 @@
 
 using namespace std;
 
-PolyMesh::PolyMesh(char *file)
-{
-  Transform *transform = new Transform();
+PolyMesh::PolyMesh(char *file) : PolyMesh(file, new Transform()){
 
-  this->do_construct(file, transform);
 }
 
-PolyMesh::PolyMesh(char *file, Transform *transform)
+PolyMesh::PolyMesh(char *file, Transform *transform) : PolyMesh(file, transform, Colour(255,255,255))
 {
-  this->do_construct(file, transform);
+}
+
+PolyMesh::PolyMesh(char *file, Transform *transform, Colour colour) : Object(colour){
+    this->do_construct(file, transform);
 }
 
 void PolyMesh::do_construct(char *file, Transform *transform)
