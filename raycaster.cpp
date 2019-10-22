@@ -28,14 +28,13 @@ int main(int argc, char *argv[])
   Vector up = Vector(0,-1,0);
 
   Camera *camera = new Camera(eye, look, up, 1, 55, height, width);
-  Scene *scene = new Scene();
+  Scene *scene = new Scene(0.1);
 
   for(int c = 0; c < width; c++) {
       for(int r = 0; r < height; r++) {
           Ray ray = Ray(eye, camera->get_ray_direction(c, r));
           Hit hit = Hit();
           hit.t = MAXFLOAT;
-          Object *closest = nullptr;
 
           for (Object *obj : scene->objects) {
               Hit obj_hit = Hit();
@@ -43,19 +42,21 @@ int main(int argc, char *argv[])
               if(obj_hit.flag) {
                   if(obj_hit.t < hit.t) {
                       hit = obj_hit;
-                      closest = obj;
                   }
               }
           }
           if (hit.flag) {
-              fb->plotDepth(c, r, hit.position.magnitude());
+              Vector colour = {0, 0, 0};
+
+              colour = colour +  hit.what->colour * scene->ka;
+              fb->plotPixel(c, r, colour.x, colour.y, colour.z);
           }
       }
   }
 
   // Output the framebuffer.
-//  fb->writeRGBFile((char *)"test.ppm");
-  fb->writeDepthFile((char *)"test.ppm");
+  fb->writeRGBFile((char *)"test.ppm");
+//  fb->writeDepthFile((char *)"test.ppm");
 
   return 0;
 }

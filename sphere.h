@@ -9,6 +9,7 @@
 
 #include <vector>
 #include "vertex.h"
+#include "vector.h"
 #include "object.h"
 
 class Sphere : public Object {
@@ -17,8 +18,8 @@ class Sphere : public Object {
     float  radius;
 
 public:
-    Sphere(Vertex c, float r) : Sphere(c, r, Colour(255,255,255)) {}
-    Sphere(Vertex c, float r, Colour colour) : Object(colour) {
+    Sphere(Vertex c, float r) : Sphere(c, r, Vector(255,255,255)) {}
+    Sphere(Vertex c, float r, Vector colour) : Object(colour) {
         center = c;
         radius = r;
     }

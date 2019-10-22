@@ -13,6 +13,7 @@
 #include "transform.h"
 #include "ray.h"
 #include "hit.h"
+#include "vector.h"
 #include <vector>
 #include <string>
 
@@ -30,5 +31,5 @@ public:
     void do_construct(char *file, Transform *transform);
     PolyMesh(char *file);
     PolyMesh(char *file, Transform *transform);
-    PolyMesh(char *file, Transform *transform, Colour colour);
+    PolyMesh(char *file, Transform *transform, Vector colour);
 };

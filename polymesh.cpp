@@ -12,6 +12,7 @@
 #include <sstream>
 #include <iterator>
 #include <vector>
+#include "vector.h"
 
 #include "polymesh.h"
 
@@ -21,11 +22,11 @@ PolyMesh::PolyMesh(char *file) : PolyMesh(file, new Transform()){
 
 }
 
-PolyMesh::PolyMesh(char *file, Transform *transform) : PolyMesh(file, transform, Colour(255,255,255))
+PolyMesh::PolyMesh(char *file, Transform *transform) : PolyMesh(file, transform, Vector(255,255,255))
 {
 }
 
-PolyMesh::PolyMesh(char *file, Transform *transform, Colour colour) : Object(colour){
+PolyMesh::PolyMesh(char *file, Transform *transform, Vector colour) : Object(colour){
     this->do_construct(file, transform);
 }
 
@@ -130,6 +131,7 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
             ab.cross(ac, hit.normal);
             hit.normal.normalise();
         }
+        hit.what = this;
         hit.flag = true;
     }
 }

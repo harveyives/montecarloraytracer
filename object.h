@@ -11,15 +11,15 @@
 
 #include "ray.h"
 #include "hit.h"
-#include "colour.h"
+#include "vector.h"
 
 class Object {
 public:
-    Colour colour;
+    Vector colour;
 
 	Object() = default;
 
-	Object(Colour c) {
+	Object(Vector c) {
 	    colour = c;
 	}
 	
