@@ -15,11 +15,9 @@
 class Object {
 public:
 
-	Object *next;
 
 	Object()
 	{
-		next = (Object *)0;
 	}
 	
 	virtual void intersection(Ray ray, Hit &hit)
