@@ -7,6 +7,8 @@
 
 #pragma once
 
+
+#include "object.h"
 #include "vertex.h"
 #include "transform.h"
 #include "ray.h"
@@ -16,7 +18,7 @@
 
 typedef int TriangleIndex[3];
 
-class PolyMesh {
+class PolyMesh : public Object {
 public:
 	int vertex_count;
 	int triangle_count;
@@ -24,7 +26,7 @@ public:
 	TriangleIndex *triangle;
 
     std::vector<std::string> split_string(std::string text);
-    void intersection(Ray ray, Hit &hit);
+    void intersection(Ray ray, Hit &hit) override;
     void do_construct(char *file, Transform *transform);
     PolyMesh(char *file);
     PolyMesh(char *file, Transform *transform);

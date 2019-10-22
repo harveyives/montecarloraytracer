@@ -11,6 +11,7 @@
 
 #include "ray.h"
 #include "hit.h"
+#include <iostream>
 
 class Object {
 public:
@@ -24,7 +25,7 @@ public:
 	
 	virtual void intersection(Ray ray, Hit &hit)
 	{
-
+        std::cout<<"test";
 	}
 };
 

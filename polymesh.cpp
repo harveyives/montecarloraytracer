@@ -82,7 +82,7 @@ vector<string> PolyMesh::split_string(string line) {
 void PolyMesh::intersection(Ray ray, Hit &hit) {
     hit.flag = false;
     hit.t = MAXFLOAT;
-    float epislon = 0.0000001;
+    float epsilon = 0.0000001;
 
     //for each triangle, check the intersections
     for(int i = 0; i < triangle_count; i++) {
@@ -101,7 +101,7 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
         float determinant = ac.dot(pvec);
 
         //if very close to zero, will not hit the triangle
-        if(fabs(determinant) < epislon)
+        if(fabs(determinant) < epsilon)
             continue;
 
         float inverseDeterminant = 1 / determinant;
@@ -119,6 +119,7 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
         if (v < 0 || u + v > 1)
             continue;
 
+        //thus intersection has been found, so calculate distance
         float t = ab.dot(qvec) * inverseDeterminant;
         if(t < hit.t){
             hit.t = t;
