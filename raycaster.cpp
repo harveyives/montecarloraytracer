@@ -6,7 +6,6 @@
  */
 #include <iostream>
 #include "framebuffer.h"
-#include "polymesh.h"
 #include "sphere.h"
 #include "camera.h"
 #include "vertex.h"
@@ -35,12 +34,19 @@ int main(int argc, char *argv[])
       for(int r = 0; r < height; r++) {
           Ray ray = Ray(eye, camera->get_ray_direction(c, r));
           Hit hit = Hit();
+          hit.t = MAXFLOAT;
 
           for (Object *obj : scene->objects) {
-              obj->intersection(ray, hit);
-              if (hit.flag) {
-                  fb->plotDepth(c, r, hit.position.magnitude());
+              Hit obj_hit = Hit();
+              obj->intersection(ray, obj_hit);
+              if(obj_hit.flag) {
+                  if(obj_hit.t < hit.t) {
+                      hit = obj_hit;
+                  }
               }
+          }
+          if (hit.flag) {
+              fb->plotDepth(c, r, hit.position.magnitude());
           }
       }
   }
