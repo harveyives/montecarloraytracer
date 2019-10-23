@@ -10,6 +10,7 @@
 class DirectionalLight : public Light {
 public:
     DirectionalLight(Vector d) {
+        position = {0,0,0};
         direction = d;
     }
 

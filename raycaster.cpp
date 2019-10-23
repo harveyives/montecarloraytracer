@@ -54,6 +54,28 @@ int main(int argc, char *argv[])
               Vector hit_colour = hit.what->colour;
               for(Light *light : scene->lights) {
 
+                  //clear up this god awful logic
+                  Hit obj_shadow_hit = Hit();
+                  for (Object *obj : scene->objects) {
+                      obj_shadow_hit.flag = false;
+
+                      Ray shadow_ray = Ray();
+                      shadow_ray.position = hit.position;
+                      shadow_ray.direction = light->position - hit.position;
+                      shadow_ray.direction.normalise();
+                      shadow_ray.position = shadow_ray.get_point(0.0001);
+
+
+                      obj->intersection(shadow_ray, obj_shadow_hit);
+                      if(obj_shadow_hit.flag) {
+                          break;
+                      }
+                  }
+                  if(obj_shadow_hit.flag) {
+                      continue;
+                  }
+
+
                   //get light direction based on point if point light, otherwise get directional light
                   Vector light_direction = light->get_light_direction(hit.position);
                   light_direction.normalise();
