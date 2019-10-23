@@ -55,6 +55,11 @@ public:
         return {x + v.x,y + v.y,z + v.z};
     }
 
+    Vertex operator + (Vector v)
+    {
+        return {x + v.x,y + v.y,z + v.z};
+    }
+
     float magnitude()
     {
         return sqrt(x * x + y * y + z * z);

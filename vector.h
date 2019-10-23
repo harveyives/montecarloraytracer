@@ -88,6 +88,10 @@ public:
         return {s * x, s * y, s * z};
     }
 
+    friend Vector operator * (float s, Vector v){
+	    return v * s;
+	}
+
     Vector operator - (Vector v)
     {
         return {x - v.x,y - v.y,z - v.z};
