@@ -9,6 +9,7 @@
 #include "polymesh.h"
 #include "vector.h"
 #include "light.h"
+#include "point_light.h"
 
 class Scene {
 public:
@@ -30,8 +31,7 @@ public:
         objects.push_back(sphere);
 
         //adding lights:
-        Light *l1 = new Light(Vertex(0,0,0), Vector(-2,3,-1));
-
+        Light *l1 = new PointLight(Vertex(15,15,0));
 
         lights.push_back(l1);
     };

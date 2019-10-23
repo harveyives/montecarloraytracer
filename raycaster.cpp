@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
   Vertex look = Vertex(0,0,1);
   Vector up = Vector(0,-1,0);
 
-  Camera *camera = new Camera(eye, look, up, 1, 55, height, width);
+  Camera *camera = new Camera(eye, look, up, 1, 60, height, width);
   Scene *scene = new Scene(0.1);
 
   for(int c = 0; c < width; c++) {
@@ -53,7 +53,12 @@ int main(int argc, char *argv[])
               int n = 128;
               Vector hit_colour = hit.what->colour;
               for(Light *light : scene->lights) {
-                  float diffuse =  light->direction.dot(hit.normal);
+
+                  //get light direction based on point if point light, otherwise get directional light
+                  Vector light_direction = light->get_light_direction(hit.position);
+                  light_direction.normalise();
+
+                  float diffuse =  light_direction.dot(hit.normal);
 
                   //thus self occulusion
                   if (diffuse < 0)
@@ -61,7 +66,7 @@ int main(int argc, char *argv[])
 
                   // calculate specular component
                   Vector reflection = Vector();
-                  hit.normal.reflection(light->direction, reflection);
+                  hit.normal.reflection(light_direction, reflection);
 
                   float specular = reflection.dot(ray.direction);
                   if (specular < 0.0)

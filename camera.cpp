@@ -6,6 +6,7 @@
 #include "vertex.h"
 
 Camera::Camera(Vertex eye, Vertex look, Vector up, double d, float fov, int height, int width) {
+    // TODO clear this stuff up
     Camera::eye = eye;
     Camera::look = look;
     Camera::up = up;

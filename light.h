@@ -12,16 +12,7 @@ public:
     Vertex position;
     Vector direction;
 
-    Light()
-    {
-    }
-
-    Light(Vertex p, Vector d)
-    {
-        position = p;
-        direction = d;
-        direction.normalise();
-    }
+    virtual Vector get_light_direction(Vertex point) = 0;
 };
 
 #endif //CODE_LIGHT_H
