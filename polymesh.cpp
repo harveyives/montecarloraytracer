@@ -11,10 +11,14 @@
 #include <string>
 #include <sstream>
 #include <iterator>
+#include <float.h>
 #include <vector>
+#include<algorithm>
+#include <values.h>
 #include "vector.h"
 
 #include "polymesh.h"
+#include "sphere.h"
 
 using namespace std;
 
@@ -28,6 +32,12 @@ PolyMesh::PolyMesh(char *file, Transform *transform) : PolyMesh(file, transform,
 
 PolyMesh::PolyMesh(char *file, Transform *transform, Vector colour) : Object(colour){
     this->do_construct(file, transform);
+
+    //post construct, form bounding sphere
+    Vertex center;
+    float radius;
+    find_bounding_sphere_values(Vertex(), radius);
+    bounding_sphere = new Sphere(center, radius);
 }
 
 void PolyMesh::do_construct(char *file, Transform *transform)
@@ -80,11 +90,54 @@ vector<string> PolyMesh::split_string(string line) {
     return arr;
 }
 
+bool PolyMesh::find_bounding_sphere_values(Vertex centre, float radius) {
+    //Implementation of Jack Ritter's Bounding Sphere algorithm.
+
+    //assume any point as min and max
+    Vertex min_limit = vertex[0];
+    Vertex max_limit = vertex[0];
+
+    //find limits
+    for(int i = 0; i < vertex_count; i++) {
+        if(vertex[i].x > min_limit.x) min_limit.x = vertex[i].x;
+        if(vertex[i].x < max_limit.x) max_limit.x = vertex[i].x;
+        if(vertex[i].y > min_limit.y) min_limit.y = vertex[i].y;
+        if(vertex[i].y < max_limit.y) max_limit.y = vertex[i].y;
+        if(vertex[i].z > min_limit.z) min_limit.z = vertex[i].z;
+        if(vertex[i].z < max_limit.z) max_limit.z = vertex[i].z;
+    }
+
+    float dx = abs(max_limit.x - min_limit.x);
+    float dy = abs(max_limit.y - min_limit.y);
+    float dz = abs(max_limit.z - min_limit.z);
+    
+    //form initial sphere
+    radius = max({dx, dy, dz}) / 2;
+    centre = (min_limit + max_limit) / 2;
+
+    for(int i = 0; i < vertex_count; i++) {
+        Vector point_vector = vertex[i] - centre;
+        float distance = point_vector.magnitude();
+
+        //test if point outside sphere
+        if(distance > radius) {
+            float difference = (distance - radius) / 2;
+            radius = radius + difference;
+            centre = centre + difference * point_vector;
+        }
+    }
+}
+
 void PolyMesh::intersection(Ray ray, Hit &hit) {
+    //Before testing polymesh intersection, check bounding sphere;
+    Hit bounding_hit = Hit();
+    bounding_sphere->intersection(ray, bounding_hit);
+    if(!bounding_hit.flag) return;
+
+
     hit.flag = false;
     hit.t = MAXFLOAT;
     float epsilon = 0.0000001;
-
     //for each triangle, check the intersections
     for(int i = 0; i < triangle_count; i++) {
         //Moller Trombore Algorithm for triangle intersection

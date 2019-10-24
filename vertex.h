@@ -50,7 +50,7 @@ public:
         return {x - v.x,y - v.y,z - v.z};
     }
 
-    Vector operator + (Vertex v)
+    Vertex operator + (Vertex v)
     {
         return {x + v.x,y + v.y,z + v.z};
     }
@@ -58,6 +58,11 @@ public:
     Vertex operator + (Vector v)
     {
         return {x + v.x,y + v.y,z + v.z};
+    }
+
+    Vertex operator / (float s)
+    {
+        return {x / s,y / s,z / s};
     }
 
     float magnitude()
