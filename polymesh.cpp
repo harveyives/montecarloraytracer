@@ -129,14 +129,14 @@ bool PolyMesh::find_bounding_sphere_values(Vertex centre, float radius) {
 }
 
 void PolyMesh::intersection(Ray ray, Hit &hit) {
-    //Before testing polymesh intersection, check bounding sphere;
-    Hit bounding_hit = Hit();
-    bounding_sphere->intersection(ray, bounding_hit);
-    if(!bounding_hit.flag) return;
-
+    // TODO refactor this bounding sphere thing later
+//    //Before testing polymesh intersection, check bounding sphere;
+//    Hit bounding_hit = Hit();
+//    bounding_sphere->intersection(ray, bounding_hit);
+//    if(!bounding_hit.flag) return;
 
     hit.flag = false;
-    hit.t = MAXFLOAT;
+//    hit.t = MAXFLOAT;
     float epsilon = 0.0000001;
     //for each triangle, check the intersections
     for(int i = 0; i < triangle_count; i++) {
@@ -161,8 +161,7 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
         float inverseDeterminant = 1 / determinant;
 
         //converting to tuv space
-        Vector tvec = Vertex(0,0,0) - a;
-
+        Vector tvec = ray.position - a;
         float u = tvec.dot(pvec) * inverseDeterminant;
         if (u < 0 || u > 1)
             continue;
@@ -175,7 +174,7 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
 
         //thus intersection has been found, so calculate distance
         float t = ab.dot(qvec) * inverseDeterminant;
-        if(t < hit.t){
+        if(t < hit.t && t > 0){
             hit.t = t;
             hit.position.x = ray.position.x + t * ray.direction.x;
             hit.position.y = ray.position.y + t * ray.direction.y;
@@ -183,8 +182,10 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
             //triangle normal
             ab.cross(ac, hit.normal);
             hit.normal.normalise();
+
+
+            hit.flag = true;
+            hit.what = this;
         }
-        hit.what = this;
-        hit.flag = true;
     }
 }

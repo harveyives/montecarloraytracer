@@ -18,8 +18,8 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  int width = 100;
-  int height = 100;
+  int width = 256;
+  int height = 256;
 
   // Create a framebuffer
   FrameBuffer *fb = new FrameBuffer(width,height);
@@ -28,8 +28,8 @@ int main(int argc, char *argv[])
   Vertex look = Vertex(0,0,1);
   Vector up = Vector(0,-1,0);
 
-  Camera *camera = new Camera(eye, look, up, 1, 60, height, width);
-  Scene *scene = new Scene(0.1);
+  Camera *camera = new Camera(eye, look, up, 1, 70, height, width);
+  Scene *scene = new Scene(0.2);
 
   for(int c = 0; c < width; c++) {
       for(int r = 0; r < height; r++) {
@@ -39,6 +39,8 @@ int main(int argc, char *argv[])
 
           for (Object *obj : scene->objects) {
               Hit obj_hit = Hit();
+
+              obj_hit.t = MAXFLOAT;
               obj->intersection(ray, obj_hit);
               if(obj_hit.flag) {
                   if(obj_hit.t < hit.t) {
@@ -56,6 +58,7 @@ int main(int argc, char *argv[])
 
                   //clear up this god awful logic
                   Hit obj_shadow_hit = Hit();
+                  obj_shadow_hit.t = MAXFLOAT;
                   for (Object *obj : scene->objects) {
                       obj_shadow_hit.flag = false;
 
@@ -63,7 +66,7 @@ int main(int argc, char *argv[])
                       shadow_ray.position = hit.position;
                       shadow_ray.direction = light->position - hit.position;
                       shadow_ray.direction.normalise();
-                      shadow_ray.position = shadow_ray.get_point(0.0001);
+                      shadow_ray.position = shadow_ray.get_point(0.001);
 
 
                       obj->intersection(shadow_ray, obj_shadow_hit);
@@ -96,6 +99,7 @@ int main(int argc, char *argv[])
 
                   colour = colour + hit_colour * diffuse * kd + hit_colour * pow(specular, n) * ks;
               }
+              //TODO divide by number of lights?
               colour = colour + hit_colour * scene->ka;
               fb->plotPixel(c, r, colour.x, colour.y, colour.z);
           }

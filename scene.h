@@ -27,16 +27,14 @@ public:
         Sphere *sphere2 = new Sphere(Vertex(0, 0, 400), 300);
         Sphere *sphere3 = new Sphere(Vertex(5, 12, 20), 2, Vector(0,0,255));
         Sphere *sphere4 = new Sphere(Vertex(8, 8, 30), 2, Vector(255,0,0));
-        Sphere *bound = new Sphere(Vertex(0.217, 0.575, 7), 3.217, Vector(0,255,255));
-        objects.push_back(pm);
         objects.push_back(sphere);
         objects.push_back(sphere2);
         objects.push_back(sphere3);
         objects.push_back(sphere4);
-        objects.push_back(bound);
+        objects.push_back(pm);
 
         //adding lights:
-        Light *l1 = new PointLight(Vertex(-8,8,0));
+        Light *l1 = new PointLight(Vertex(-5,5,-5));
 
         lights.push_back(l1);
     };

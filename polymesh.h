@@ -28,13 +28,13 @@ public:
 	Object *bounding_sphere;
 
     std::vector<std::string> split_string(std::string text);
-    void intersection(Ray ray, Hit &hit) override;
     void do_construct(char *file, Transform *transform);
     PolyMesh(char *file);
     PolyMesh(char *file, Transform *transform);
     PolyMesh(char *file, Transform *transform, Vector colour);
 
-    bool intersects_bounding_sphere(Ray ray);
-
     bool find_bounding_sphere_values(Vertex centre, float radius);
+
+    void intersection(Ray ray, Hit &hit) override;
+
 };
