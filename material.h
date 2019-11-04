@@ -10,13 +10,13 @@
 class Material {
 public:
     Vector colour;
-    float specular;
-    float diffuse;
+    float ks;
+    float kd;
 
-    Material(Vector c = {255, 255, 255}, float s = 0.3, float d = 0.5) {
+    Material(Vector c = {255, 255, 255}, float specular = 0.3, float diffuse = 0.5) {
         colour = c;
-        specular = s;
-        diffuse = d;
+        ks = specular;
+        kd = diffuse;
     }
 };
 #endif //CODE_MATERIAL_H

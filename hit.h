@@ -18,7 +18,7 @@ class Object;
 class Hit {
 public:
 	bool flag;
-	float t;
+	float t = MAXFLOAT;
 	Object *what;
 	Vertex position;
 	Vector normal;

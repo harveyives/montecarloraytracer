@@ -16,6 +16,9 @@
 
 using namespace std;
 
+bool
+object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Vertex &light_position);
+
 int main(int argc, char *argv[])
 {
   int width = 100;
@@ -35,12 +38,10 @@ int main(int argc, char *argv[])
       for(int r = 0; r < height; r++) {
           Ray ray = Ray(eye, camera->get_ray_direction(c, r));
           Hit hit = Hit();
-          hit.t = MAXFLOAT;
 
           for (Object *obj : scene->objects) {
               Hit obj_hit = Hit();
 
-              obj_hit.t = MAXFLOAT;
               obj->intersection(ray, obj_hit);
               if(obj_hit.flag) {
                   if(obj_hit.t < hit.t) {
@@ -50,27 +51,10 @@ int main(int argc, char *argv[])
           }
           if (hit.flag) {
               Vector colour = {0, 0, 0};
-              int n = 128;
               Vector hit_colour = hit.what->material.colour;
+
               for(Light *light : scene->lights) {
-
-                  Hit obj_shadow_hit = Hit();
-                  obj_shadow_hit.t = MAXFLOAT;
-                  for (Object *obj : scene->objects) {
-                      obj_shadow_hit.flag = false;
-
-                      Ray shadow_ray = Ray();
-                      shadow_ray.position = hit.position;
-                      shadow_ray.direction = light->position - hit.position;
-                      shadow_ray.direction.normalise();
-                      shadow_ray.position = shadow_ray.get_point(0.001);
-
-                      obj->intersection(shadow_ray, obj_shadow_hit);
-                      if(obj_shadow_hit.flag) {
-                          break;
-                      }
-                  }
-                  if(obj_shadow_hit.flag) {
+                  if(object_occluded(scene->objects, hit.position, light->position)) {
                       continue;
                   }
 
@@ -78,23 +62,23 @@ int main(int argc, char *argv[])
                   Vector light_direction = light->get_light_direction(hit.position);
                   light_direction.normalise();
 
+                  // diffuse
                   float diffuse =  light_direction.dot(hit.normal);
 
                   //thus self occulusion
                   if (diffuse < 0)
                       continue;
 
-                  // calculate specular component
+                  // specular
                   Vector reflection = Vector();
                   hit.normal.reflection(light_direction, reflection);
 
                   float specular = reflection.dot(ray.direction);
-                  if (specular < 0.0)
+                  if (specular < 0)
                       specular = 0.0;
 
-                  colour = colour + hit_colour * diffuse * hit.what->material.diffuse + hit_colour * pow(specular, n) * hit.what->material.specular;
+                  colour = colour + hit_colour * diffuse * hit.what->material.kd + hit_colour * pow(specular, 128) * hit.what->material.ks;
               }
-              //TODO divide by number of lights?
               colour = colour + hit_colour * scene->ka;
               colour = colour / scene->lights.size();
               fb->plotPixel(c, r, colour.x, colour.y, colour.z);
@@ -105,4 +89,23 @@ int main(int argc, char *argv[])
   // Output the framebuffer.
   fb->writeRGBFile((char *)"test.ppm");
   return 0;
+}
+
+bool object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Vertex &light_position) {
+    Hit obj_shadow_hit = Hit();
+    for (Object *obj : objects) {
+        obj_shadow_hit.flag = false;
+
+        Ray shadow_ray = Ray();
+        shadow_ray.position = hit_position;
+        shadow_ray.direction = light_position - hit_position;
+        shadow_ray.direction.normalise();
+        shadow_ray.position = shadow_ray.get_point(0.001);
+
+        obj->intersection(shadow_ray, obj_shadow_hit);
+        if(obj_shadow_hit.flag) {
+            return true;
+        }
+    }
+    return false;
 }
