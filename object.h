@@ -12,15 +12,16 @@
 #include "ray.h"
 #include "hit.h"
 #include "vector.h"
+#include "material.h"
 
 class Object {
 public:
-    Vector colour;
+    Material material;
 
 	Object() = default;
 
-	Object(Vector c) {
-	    colour = c;
+	Object(Material m) {
+	    material = m;
 	}
 	
 	virtual void intersection(Ray ray, Hit &hit)

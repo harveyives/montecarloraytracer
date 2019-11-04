@@ -10,6 +10,7 @@
 #include "vector.h"
 #include "light.h"
 #include "point_light.h"
+#include "directional_light.h"
 
 class Scene {
 public:
@@ -22,11 +23,11 @@ public:
 
         // adding objects:
         Transform *transform = new Transform(1.0f, 0.0f, 0.0f, 0.0f,0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 7.0f,0.0f,0.0f,0.0f,1.0f);
-        PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Vector(0,255, 0));
-        Sphere *sphere = new Sphere(Vertex(4, 12, 30), 2, Vector(255,0,0));
-        Sphere *sphere2 = new Sphere(Vertex(0, 0, 400), 300);
-        Sphere *sphere3 = new Sphere(Vertex(5, 12, 20), 2, Vector(0,0,255));
-        Sphere *sphere4 = new Sphere(Vertex(8, 8, 30), 2, Vector(255,0,0));
+        PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Material({0,255, 0}));
+        Sphere *sphere = new Sphere(Vertex(4, 12, 30), 2, Material({255,0,0}));
+        Sphere *sphere2 = new Sphere(Vertex(0, 0, 400), 300, Material({255,255,255}));
+        Sphere *sphere3 = new Sphere(Vertex(5, 12, 20), 2, Material({0,0,255}));
+        Sphere *sphere4 = new Sphere(Vertex(8, 8, 30), 2, Material({255,0,0}));
         objects.push_back(sphere);
         objects.push_back(sphere2);
         objects.push_back(sphere3);
@@ -34,9 +35,11 @@ public:
         objects.push_back(pm);
 
         //adding lights:
-        Light *l1 = new PointLight(Vertex(-5,5,-5));
+        Light *l1 = new PointLight(Vertex(-2,5,-5));
+        Light *l2 = new PointLight(Vertex(2,5,-5));
 
         lights.push_back(l1);
+//        lights.push_back(l2);
     };
 };
 #endif //CODE_SCENE_H

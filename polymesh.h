@@ -31,7 +31,7 @@ public:
     void do_construct(char *file, Transform *transform);
     PolyMesh(char *file);
     PolyMesh(char *file, Transform *transform);
-    PolyMesh(char *file, Transform *transform, Vector colour);
+    PolyMesh(char *file, Transform *transform, Material material);
 
     bool find_bounding_sphere_values(Vertex centre, float radius);
 

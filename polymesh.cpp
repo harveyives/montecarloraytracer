@@ -13,8 +13,7 @@
 #include <iterator>
 #include <float.h>
 #include <vector>
-#include<algorithm>
-#include <values.h>
+#include <algorithm>
 #include "vector.h"
 
 #include "polymesh.h"
@@ -30,7 +29,7 @@ PolyMesh::PolyMesh(char *file, Transform *transform) : PolyMesh(file, transform,
 {
 }
 
-PolyMesh::PolyMesh(char *file, Transform *transform, Vector colour) : Object(colour){
+PolyMesh::PolyMesh(char *file, Transform *transform, Material material) : Object(material){
     this->do_construct(file, transform);
 
     //post construct, form bounding sphere
@@ -86,8 +85,8 @@ void PolyMesh::do_construct(char *file, Transform *transform)
 vector<string> PolyMesh::split_string(string line) {
     istringstream ss(line);
     istream_iterator<string> begin(ss), end;
-    vector<string> arr(begin, end);
-    return arr;
+    vector<string> words(begin, end);
+    return words;
 }
 
 bool PolyMesh::find_bounding_sphere_values(Vertex centre, float radius) {
@@ -129,7 +128,6 @@ bool PolyMesh::find_bounding_sphere_values(Vertex centre, float radius) {
 }
 
 void PolyMesh::intersection(Ray ray, Hit &hit) {
-    // TODO refactor this bounding sphere thing later
 //    //Before testing polymesh intersection, check bounding sphere;
 //    Hit bounding_hit = Hit();
 //    bounding_sphere->intersection(ray, bounding_hit);
@@ -137,7 +135,7 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
 
     hit.flag = false;
 //    hit.t = MAXFLOAT;
-    float epsilon = 0.0000001;
+    float epsilon = 0.00000001;
     //for each triangle, check the intersections
     for(int i = 0; i < triangle_count; i++) {
         //Moller Trombore Algorithm for triangle intersection
@@ -158,7 +156,7 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
         if(fabs(determinant) < epsilon)
             continue;
 
-        float inverseDeterminant = 1 / determinant;
+        double inverseDeterminant = 1.0 / determinant;
 
         //converting to tuv space
         Vector tvec = ray.position - a;
@@ -176,9 +174,7 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
         float t = ab.dot(qvec) * inverseDeterminant;
         if(t < hit.t && t > 0){
             hit.t = t;
-            hit.position.x = ray.position.x + t * ray.direction.x;
-            hit.position.y = ray.position.y + t * ray.direction.y;
-            hit.position.z = ray.position.z + t * ray.direction.z;
+            hit.position = ray.position + t * ray.direction;
             //triangle normal
             ab.cross(ac, hit.normal);
             hit.normal.normalise();

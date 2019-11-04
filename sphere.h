@@ -18,8 +18,8 @@ class Sphere : public Object {
     float  radius;
 
 public:
-    Sphere(Vertex c, float r) : Sphere(c, r, Vector(255,255,255)) {}
-    Sphere(Vertex c, float r, Vector colour) : Object(colour) {
+    Sphere(Vertex c, float r) : Sphere(c, r, material) {}
+    Sphere(Vertex c, float r, Material material) : Object(material) {
         center = c;
         radius = r;
     }
