@@ -15,6 +15,7 @@ public:
 
     Vector get_light_direction(Vertex p) override {
         direction = position - p;
+        direction.normalise();
         return direction;
     }
 };

@@ -134,7 +134,6 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
 //    if(!bounding_hit.flag) return;
 
     hit.flag = false;
-//    hit.t = MAXFLOAT;
     float epsilon = 0.00000001;
     //for each triangle, check the intersections
     for(int i = 0; i < triangle_count; i++) {

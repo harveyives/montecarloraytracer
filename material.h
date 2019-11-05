@@ -13,7 +13,7 @@ public:
     float ks;
     float kd;
 
-    Material(Vector c = {255, 255, 255}, float specular = 0.3, float diffuse = 0.5) {
+    Material(Vector c = {255, 255, 255}, float specular = 0.2, float diffuse = 0.5) {
         colour = c;
         ks = specular;
         kd = diffuse;

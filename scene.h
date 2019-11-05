@@ -11,6 +11,7 @@
 #include "light.h"
 #include "point_light.h"
 #include "directional_light.h"
+#include "plane.h"
 
 class Scene {
 public:
@@ -21,23 +22,46 @@ public:
     Scene(float ambient = 1) {
         ka = ambient;
 
-        // adding objects:
+        // Adding objects:
+
+        // Polys
         Transform *transform = new Transform(1.0f, 0.0f, 0.0f, 0.0f,0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 7.0f,0.0f,0.0f,0.0f,1.0f);
         PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Material({0,255, 0}));
-        Sphere *sphere = new Sphere(Vertex(4, 12, 30), 2, Material({255,0,0}));
-        Sphere *sphere2 = new Sphere(Vertex(0, 0, 400), 300, Material({255,255,255}));
-        Sphere *sphere3 = new Sphere(Vertex(5, 12, 20), 2, Material({0,0,255}));
+
+        // Spheres
+        Sphere *sphere = new Sphere(Vertex(-4, 4, 15), 5, Material({255,0,0}));
+        Sphere *sphere2 = new Sphere(Vertex(0, 0, 400), 350, Material({255,255,255}));
+        Sphere *sphere3 = new Sphere(Vertex(4, 12, 20), 2, Material({0,0,255}));
         Sphere *sphere4 = new Sphere(Vertex(8, 8, 30), 2, Material({255,0,0}));
-        objects.push_back(sphere);
-        objects.push_back(sphere2);
-        objects.push_back(sphere3);
-        objects.push_back(sphere4);
+
+        // Cornell Box
+        Plane *top = new Plane(Vertex(0,35,0), Vector(0,-1,0), Material({255,255,255}, 0));
+        Plane *bottom = new Plane(Vertex(0,-35,0), Vector(0,1,0), Material({255,255,255}, 0));
+        Plane *left = new Plane(Vertex(-35,0,0), Vector(1,0,0), Material({255,0,0}, 0));
+        Plane *right = new Plane(Vertex(35,0,0), Vector(-1,0,0), Material({0,255,0}, 0));
+        Plane *back = new Plane(Vertex(0,0,50), Vector(0,0,-1), Material({255,255,255}, 0));
+
+        // Adding to list
         objects.push_back(pm);
 
-        //adding lights:
-        Light *l1 = new PointLight(Vertex(-2,5,-5));
-        Light *l2 = new PointLight(Vertex(2,5,-5));
+        objects.push_back(sphere);
+//        objects.push_back(sphere2);
+        objects.push_back(sphere3);
+        objects.push_back(sphere4);
 
+        objects.push_back(top);
+        objects.push_back(bottom);
+        objects.push_back(left);
+        objects.push_back(right);
+        objects.push_back(back);
+
+        // Adding lights:
+        Light *l1 = new PointLight(Vertex(-5,5,-5));
+//        Light *l2 = new PointLight(Vertex(0,100,-10));
+//        Light *l2 = new PointLight(Vertex(2,5,-5));
+//        Light *l3 = new DirectionalLight(Vector(0,0,-1));
+
+        // Adding to list
         lights.push_back(l1);
 //        lights.push_back(l2);
     };
