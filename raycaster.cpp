@@ -16,13 +16,14 @@
 
 using namespace std;
 
-bool
-object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Vertex &light_position);
+bool object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Vertex &light_position);
+
+Vector raytrace(Scene *scene, Ray ray, int depth);
 
 int main(int argc, char *argv[])
 {
-  int width = 100;
-  int height = 100;
+  int width = 256;
+  int height = 256;
 
   // Create a framebuffer
   FrameBuffer *fb = new FrameBuffer(width,height);
@@ -30,61 +31,16 @@ int main(int argc, char *argv[])
   Vertex eye = Vertex(0,0,0);
   Vertex look = Vertex(0,0,1);
   Vector up = Vector(0,1,0);
-
+  // TODO move this to the scene?
   Camera *camera = new Camera(eye, look, up, 1, 90, height, width);
   Scene *scene = new Scene(0.2);
 
   for(int c = 0; c < width; c++) {
       for(int r = 0; r < height; r++) {
           Ray ray = Ray(eye, camera->get_ray_direction(c, r));
-          Hit hit = Hit();
 
-          for (Object *obj : scene->objects) {
-              Hit obj_hit = Hit();
-
-              obj->intersection(ray, obj_hit);
-              if(obj_hit.flag) {
-                  if(obj_hit.t < hit.t) {
-                      hit = obj_hit;
-                  }
-              }
-          }
-          if (hit.flag) {
-              Vector colour = {0, 0, 0};
-              Vector hit_colour = hit.what->material.colour;
-
-              for(Light *light : scene->lights) {
-                  if(object_occluded(scene->objects, hit.position, light->position)) {
-                      continue;
-                  }
-
-                  //get light direction based on point if point light, otherwise get directional light
-                  Vector light_direction = light->get_light_direction(hit.position);
-                  light_direction.normalise();
-
-                  // diffuse
-                  float diffuse =  light_direction.dot(hit.normal);
-
-                  //thus self occulusion
-                  if (diffuse < 0) {
-                      continue;
-                  }
-
-                  // specular
-                  Vector reflection = Vector();
-                  hit.normal.reflection(light_direction, reflection);
-
-                  float specular = reflection.dot(ray.direction);
-                  // thus no contribution
-                  if (specular < 0) {
-                      specular = 0.0;
-                  }
-                  colour = colour + hit_colour * diffuse * hit.what->material.kd + hit_colour * pow(specular, 128) * hit.what->material.ks;
-              }
-              colour = colour + hit_colour * scene->ka;
-              colour = colour / scene->lights.size();
-              fb->plotPixel(c, r, colour.x, colour.y, colour.z);
-          }
+          Vector colour = raytrace(scene, ray, 5);
+          fb->plotPixel(c, r, colour.x, colour.y, colour.z);
       }
   }
 
@@ -93,23 +49,86 @@ int main(int argc, char *argv[])
   return 0;
 }
 
+Vector raytrace(Scene *scene, Ray ray, int depth = 1) {
+    Hit hit = Hit();
+    Vector colour = {0,0,0};
+    if(depth == 0) return colour;
+    for (Object *obj : scene->objects) {
+        Hit obj_hit = Hit();
+
+        obj->intersection(ray, obj_hit);
+        if(obj_hit.flag) {
+            if(obj_hit.t < hit.t) {
+                hit = obj_hit;
+            }
+        }
+    }
+    if (hit.flag) {
+        Vector hit_colour = hit.what->material.colour;
+
+        for(Light *light : scene->lights) {
+            if(object_occluded(scene->objects, hit.position, light->position)) {
+                continue;
+            }
+
+            //get light direction based on point if point light, otherwise get directional light
+            Vector light_direction = light->get_light_direction(hit.position);
+            light_direction.normalise();
+
+            // diffuse
+            float diffuse =  light_direction.dot(hit.normal);
+
+            //thus self occlusion
+            if (diffuse < 0) {
+                continue;
+            }
+
+            // specular
+            Vector reflection = Vector();
+            hit.normal.reflection(light_direction, reflection);
+            float specular = reflection.dot(ray.direction);
+            // thus no contribution
+            if (specular < 0) {
+                specular = 0.0;
+            }
+            //TODO colour individual channels? 
+            colour = colour + hit_colour * diffuse * hit.what->material.kd + hit_colour * pow(specular, 128) * hit.what->material.ks;
+
+
+            Ray reflection_ray;
+            hit.normal.reflection(ray.direction, reflection_ray.direction);
+            reflection_ray.position = hit.position;
+            // TODO find a cleaner way of doing this:
+            reflection_ray.position = reflection_ray.get_point(0.001);
+
+            colour = colour + hit.what->material.kr * raytrace(scene, reflection_ray, --depth);
+        }
+        colour = colour + hit_colour * scene->ka;
+        colour = colour / scene->lights.size();
+
+
+
+    }
+    return colour;
+}
+
 bool object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Vertex &light_position) {
-    Ray shadow_ray = Ray();
-    shadow_ray.position = hit_position;
-    shadow_ray.direction = light_position - hit_position;
+    Ray shadow = Ray();
+    shadow.position = hit_position;
+    shadow.direction = light_position - hit_position;
     // don't cast shadows from objects that are further away than the light
-    float shadow_max = shadow_ray.direction.magnitude();
-    shadow_ray.direction.normalise();
+    float distance_to_light = shadow.direction.magnitude();
+    shadow.direction.normalise();
 
     // shifting so that the face does not self-shadow
-    shadow_ray.position = shadow_ray.get_point(0.001);
+    shadow.position = shadow.get_point(0.001);
 
     Hit obj_shadow_hit = Hit();
     for (Object *obj : objects) {
         obj_shadow_hit.flag = false;
 
-        obj->intersection(shadow_ray, obj_shadow_hit);
-        if(obj_shadow_hit.flag && obj_shadow_hit.t < shadow_max) {
+        obj->intersection(shadow, obj_shadow_hit);
+        if(obj_shadow_hit.flag && obj_shadow_hit.t < distance_to_light) {
             return true;
         }
     }

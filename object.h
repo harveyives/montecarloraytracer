@@ -20,7 +20,7 @@ public:
 
 	Object() = default;
 
-	Object(Material m) {
+	Object(Material m) : material(Vector(), 0, 0, 0) {
 	    material = m;
 	}
 	

@@ -26,20 +26,29 @@ public:
 
         // Polys
         Transform *transform = new Transform(1.0f, 0.0f, 0.0f, 0.0f,0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f, 1.0f, 7.0f,0.0f,0.0f,0.0f,1.0f);
-        PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Material({0,255, 0}));
+        PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Material({0, 255, 0}, 0.6, 0.4, 0.6));
 
         // Spheres
-        Sphere *sphere = new Sphere(Vertex(-4, 4, 15), 5, Material({255,0,0}));
-        Sphere *sphere2 = new Sphere(Vertex(0, 0, 400), 350, Material({255,255,255}));
-        Sphere *sphere3 = new Sphere(Vertex(4, 12, 20), 2, Material({0,0,255}));
-        Sphere *sphere4 = new Sphere(Vertex(8, 8, 30), 2, Material({255,0,0}));
+        Sphere *sphere = new Sphere(Vertex(-4, 4, 15), 5, Material({255, 0, 0}, 0.8, 0.4, 0.8));
+        Sphere *sphere2 = new Sphere(Vertex(0, 0, 400), 350, Material({255, 255, 255}, 0, 0.4, 0));
+        Sphere *sphere3 = new Sphere(Vertex(4, 12, 20), 2, Material({0, 0, 255}, 0, 0.4, 0));
+        Sphere *sphere4 = new Sphere(Vertex(8, 8, 30), 2, Material({255, 0, 0}, 0, 0.4, 0));
 
         // Cornell Box
-        Plane *top = new Plane(Vertex(0,35,0), Vector(0,-1,0), Material({255,255,255}, 0));
-        Plane *bottom = new Plane(Vertex(0,-35,0), Vector(0,1,0), Material({255,255,255}, 0));
-        Plane *left = new Plane(Vertex(-35,0,0), Vector(1,0,0), Material({255,0,0}, 0));
-        Plane *right = new Plane(Vertex(35,0,0), Vector(-1,0,0), Material({0,255,0}, 0));
-        Plane *back = new Plane(Vertex(0,0,50), Vector(0,0,-1), Material({255,255,255}, 0));
+        Plane *top = new Plane(Vertex(0,35,0),Vector(0,-1,0),
+                Material({255, 255, 255}, 0, 0.4, 0));
+
+        Plane *bottom = new Plane(Vertex(0,-35,0),Vector(0,1,0),
+                Material({255, 255, 255}, 0, 0.4, 0));
+
+        Plane *left = new Plane(Vertex(-35,0,0),Vector(1,0,0),
+                Material({255, 0, 0}, 0, 0.4, 0));
+
+        Plane *right = new Plane(Vertex(35,0,0),Vector(-1,0,0),
+                Material({0, 255, 0}, 0, 0.4, 0));
+
+        Plane *back = new Plane(Vertex(0,0,50),Vector(0,0,-1),
+                Material({255, 255, 255}, 0, 0.4, 0));
 
         // Adding to list
         objects.push_back(pm);

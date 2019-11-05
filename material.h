@@ -12,11 +12,13 @@ public:
     Vector colour;
     float ks;
     float kd;
+    float kr;
 
-    Material(Vector c = {255, 255, 255}, float specular = 0.2, float diffuse = 0.5) {
+    Material(Vector c = {255, 255, 255}, float specular = 0.2, float diffuse = 0.5, float reflection = 0) {
         colour = c;
         ks = specular;
         kd = diffuse;
+        kr = reflection;
     }
 };
 #endif //CODE_MATERIAL_H
