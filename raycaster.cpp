@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
       for(int r = 0; r < height; r++) {
           Ray ray = Ray(eye, camera->get_ray_direction(c, r));
 
-          Vector colour = raytrace(scene, ray, 5);
+          Vector colour = raytrace(scene, ray, 2);
           fb->plotPixel(c, r, colour.x, colour.y, colour.z);
       }
   }
@@ -93,21 +93,19 @@ Vector raytrace(Scene *scene, Ray ray, int depth = 1) {
             }
             //TODO colour individual channels? 
             colour = colour + hit_colour * diffuse * hit.what->material.kd + hit_colour * pow(specular, 128) * hit.what->material.ks;
-
-
-            Ray reflection_ray;
-            hit.normal.reflection(ray.direction, reflection_ray.direction);
-            reflection_ray.position = hit.position;
-            // TODO find a cleaner way of doing this:
-            reflection_ray.position = reflection_ray.get_point(0.001);
-
-            colour = colour + hit.what->material.kr * raytrace(scene, reflection_ray, --depth);
         }
         colour = colour + hit_colour * scene->ka;
         colour = colour / scene->lights.size();
 
 
+        // tODO add conditional here to ignore reflection && refraction if coeffs really small
+        Ray reflection_ray;
+        hit.normal.reflection(ray.direction, reflection_ray.direction);
+        reflection_ray.position = hit.position;
+        // TODO find a cleaner way of doing this:
+        reflection_ray.position = reflection_ray.get_point(0.001);
 
+        colour = colour + hit.what->material.kr * raytrace(scene, reflection_ray, --depth);
     }
     return colour;
 }

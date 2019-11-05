@@ -51,7 +51,7 @@ public:
                 Material({255, 255, 255}, 0, 0.4, 0));
 
         // Adding to list
-        objects.push_back(pm);
+//        objects.push_back(pm);
 
         objects.push_back(sphere);
 //        objects.push_back(sphere2);
