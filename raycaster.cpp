@@ -104,8 +104,15 @@ Vector raytrace(Scene *scene, Ray ray, int depth = 1) {
         reflection_ray.position = hit.position;
         // TODO find a cleaner way of doing this:
         reflection_ray.position = reflection_ray.get_point(0.001);
-
         colour = colour + hit.what->material.kr * raytrace(scene, reflection_ray, --depth);
+//
+//        Ray transparency_ray;
+//        hit.normal.reflection(ray.direction, transparency_ray.direction);
+//        transparency_ray.position = hit.position;
+//        // TODO find a cleaner way of doing this:
+//        transparency_ray.position = reflection_ray.get_point(0.001);
+//        colour = colour + hit.what->material.kt * raytrace(scene, transparency_ray, --depth);
+
     }
     return colour;
 }

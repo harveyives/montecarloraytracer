@@ -25,7 +25,7 @@ PolyMesh::PolyMesh(char *file) : PolyMesh(file, new Transform()){
 
 }
 
-PolyMesh::PolyMesh(char *file, Transform *transform) : PolyMesh(file, transform, Vector(255,255,255))
+PolyMesh::PolyMesh(char *file, Transform *transform) : PolyMesh(file, transform, Material())
 {
 }
 

@@ -35,20 +35,16 @@ public:
         Sphere *sphere4 = new Sphere(Vertex(8, 8, 30), 2, Material({255, 0, 0}, 0, 0.4, 0));
 
         // Cornell Box
-        Plane *top = new Plane(Vertex(0,35,0),Vector(0,-1,0),
-                Material({255, 255, 255}, 0, 0.4, 0));
+        Material wall = Material({255,255,255}, 0.1, 0.4, 0);
+        Plane *top = new Plane(Vertex(0,35,0),Vector(0,-1,0), wall);
 
-        Plane *bottom = new Plane(Vertex(0,-35,0),Vector(0,1,0),
-                Material({255, 255, 255}, 0, 0.4, 0));
+        Plane *bottom = new Plane(Vertex(0,-35,0),Vector(0,1,0), wall);
 
-        Plane *left = new Plane(Vertex(-35,0,0),Vector(1,0,0),
-                Material({255, 0, 0}, 0, 0.4, 0));
+        Plane *left = new Plane(Vertex(-35,0,0),Vector(1,0,0), wall.set_colour({255,0,0}));
 
-        Plane *right = new Plane(Vertex(35,0,0),Vector(-1,0,0),
-                Material({0, 255, 0}, 0, 0.4, 0));
+        Plane *right = new Plane(Vertex(35,0,0),Vector(-1,0,0), wall.set_colour({0,255,0}));
 
-        Plane *back = new Plane(Vertex(0,0,50),Vector(0,0,-1),
-                Material({255, 255, 255}, 0, 0.4, 0));
+        Plane *back = new Plane(Vertex(0,0,50),Vector(0,0,-1), wall);
 
         // Adding to list
 //        objects.push_back(pm);
