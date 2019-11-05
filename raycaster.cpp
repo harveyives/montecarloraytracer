@@ -29,9 +29,9 @@ int main(int argc, char *argv[])
 
   Vertex eye = Vertex(0,0,0);
   Vertex look = Vertex(0,0,1);
-  Vector up = Vector(0,-1,0);
+  Vector up = Vector(0,1,0);
 
-  Camera *camera = new Camera(eye, look, up, 1, 65, height, width);
+  Camera *camera = new Camera(eye, look, up, 1, 90, height, width);
   Scene *scene = new Scene(0.2);
 
   for(int c = 0; c < width; c++) {

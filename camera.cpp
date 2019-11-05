@@ -12,10 +12,10 @@ Camera::Camera(Vertex eye, Vertex look, Vector up, double d, float fov, int heig
     this->up = up;
     this->d = d;
 
-    w = Vector(look.x, look.y, look.z, eye.x, eye.y, eye.z);
+    w = eye - look;
     w.normalise();
 
-    up.cross(w, u);
+    w.cross(up, u);
     u.normalise();
 
     w.cross(u, v);
