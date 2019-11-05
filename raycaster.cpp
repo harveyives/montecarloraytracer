@@ -66,17 +66,19 @@ int main(int argc, char *argv[])
                   float diffuse =  light_direction.dot(hit.normal);
 
                   //thus self occulusion
-                  if (diffuse < 0)
+                  if (diffuse < 0) {
                       continue;
+                  }
 
                   // specular
                   Vector reflection = Vector();
                   hit.normal.reflection(light_direction, reflection);
 
                   float specular = reflection.dot(ray.direction);
-                  if (specular < 0)
+                  // thus no contribution
+                  if (specular < 0) {
                       specular = 0.0;
-
+                  }
                   colour = colour + hit_colour * diffuse * hit.what->material.kd + hit_colour * pow(specular, 128) * hit.what->material.ks;
               }
               colour = colour + hit_colour * scene->ka;
@@ -92,18 +94,22 @@ int main(int argc, char *argv[])
 }
 
 bool object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Vertex &light_position) {
+    Ray shadow_ray = Ray();
+    shadow_ray.position = hit_position;
+    shadow_ray.direction = light_position - hit_position;
+    // don't cast shadows from objects that are further away than the light
+    float shadow_max = shadow_ray.direction.magnitude();
+    shadow_ray.direction.normalise();
+
+    // shifting so that the face does not self-shadow
+    shadow_ray.position = shadow_ray.get_point(0.001);
+
     Hit obj_shadow_hit = Hit();
     for (Object *obj : objects) {
         obj_shadow_hit.flag = false;
 
-        Ray shadow_ray = Ray();
-        shadow_ray.position = hit_position;
-        shadow_ray.direction = light_position - hit_position;
-        shadow_ray.direction.normalise();
-        shadow_ray.position = shadow_ray.get_point(0.001);
-
         obj->intersection(shadow_ray, obj_shadow_hit);
-        if(obj_shadow_hit.flag) {
+        if(obj_shadow_hit.flag && obj_shadow_hit.t < shadow_max) {
             return true;
         }
     }
