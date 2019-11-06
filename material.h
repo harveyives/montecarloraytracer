@@ -13,15 +13,18 @@ public:
     Vector colour;
     float ks;
     float kd;
-    float kr;
-    float kt;
+    float ior;
+    bool r;
+    bool t;
 
-    Material(Vector c = {255, 255, 255}, float specular = 0.2, float diffuse = 0.5, float reflection = 0, float transparency = 0) {
+    Material(Vector c = {255, 255, 255}, float specular = 0.2, float diffuse = 0.5, float refractive_index = 1,
+             bool reflective = false, bool transparent = false) {
         colour = c;
         ks = specular;
         kd = diffuse;
-        kr = reflection;
-        kt = transparency;
+        ior = refractive_index;
+        r = reflective;
+        t = transparent;
     }
 
 

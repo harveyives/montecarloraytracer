@@ -12,7 +12,7 @@ class Plane : public Object {
     Vector normal;
     Vertex position;
 public:
-    Plane(Vertex p, Vector n) : Plane(p, n , material) {}
+    Plane(Vertex p, Vector n) : Plane(p, n , Material()) {}
     Plane(Vertex p, Vector n, Material material) : Object(material) {
         position = p;
         normal = n;

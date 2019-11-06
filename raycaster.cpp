@@ -17,8 +17,9 @@
 using namespace std;
 
 bool object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Vertex &light_position);
-
-Vector raytrace(Scene *scene, Ray ray, int depth);
+Vector raytrace(Scene *scene, Ray &ray, int depth);
+float fresnel(float refractive_index, float cos_i);
+Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i);
 
 int main(int argc, char *argv[])
 {
@@ -33,13 +34,13 @@ int main(int argc, char *argv[])
   Vector up = Vector(0,1,0);
   // TODO move this to the scene?
   Camera *camera = new Camera(eye, look, up, 1, 90, height, width);
-  Scene *scene = new Scene(0.2);
+  Scene *scene = new Scene(0.7);
 
   for(int c = 0; c < width; c++) {
       for(int r = 0; r < height; r++) {
           Ray ray = Ray(eye, camera->get_ray_direction(c, r));
 
-          Vector colour = raytrace(scene, ray, 2);
+          Vector colour = raytrace(scene, ray, 3);
           fb->plotPixel(c, r, colour.x, colour.y, colour.z);
       }
   }
@@ -49,10 +50,10 @@ int main(int argc, char *argv[])
   return 0;
 }
 
-Vector raytrace(Scene *scene, Ray ray, int depth = 1) {
+Vector raytrace(Scene *scene, Ray &ray, int depth) {
     Hit hit = Hit();
     Vector colour = {0,0,0};
-    if(depth == 0) return colour;
+    if(depth <= 0) return colour;
     for (Object *obj : scene->objects) {
         Hit obj_hit = Hit();
 
@@ -77,7 +78,6 @@ Vector raytrace(Scene *scene, Ray ray, int depth = 1) {
 
             // diffuse
             float diffuse =  light_direction.dot(hit.normal);
-
             //thus self occlusion
             if (diffuse < 0) {
                 continue;
@@ -98,21 +98,36 @@ Vector raytrace(Scene *scene, Ray ray, int depth = 1) {
         colour = colour / scene->lights.size();
 
 
-        // tODO add conditional here to ignore reflection && refraction if coeffs really small
-        Ray reflection_ray;
-        hit.normal.reflection(ray.direction, reflection_ray.direction);
-        reflection_ray.position = hit.position;
-        // TODO find a cleaner way of doing this:
-        reflection_ray.position = reflection_ray.get_point(0.001);
-        colour = colour + hit.what->material.kr * raytrace(scene, reflection_ray, --depth);
-//
-//        Ray transparency_ray;
-//        hit.normal.reflection(ray.direction, transparency_ray.direction);
-//        transparency_ray.position = hit.position;
-//        // TODO find a cleaner way of doing this:
-//        transparency_ray.position = reflection_ray.get_point(0.001);
-//        colour = colour + hit.what->material.kt * raytrace(scene, transparency_ray, --depth);
+        // cos(theta1)
+        float cos_i = max(-1.f, min(ray.direction.dot(hit.normal), 1.f));
+        // compute kr by Fresnel
+        float kr = fresnel(hit.what->material.ior, cos_i);
 
+        // Remove speckles TODO reuse this in shadow
+        Vector shift_bias = 0.01 * hit.normal;
+
+        // only compute if reflective material
+        if(hit.what->material.r){
+            Ray reflection_ray;
+            hit.normal.reflection(ray.direction, reflection_ray.direction);
+            reflection_ray.direction.normalise();
+
+            reflection_ray.position = cos_i < 0 ? hit.position + shift_bias : hit.position + -shift_bias;
+
+            colour = colour +  kr * raytrace(scene, reflection_ray, depth - 1);
+        }
+
+        // only compute if transparent material
+        // if kr = 1 then total internal reflection, so only reflect
+        if (hit.what->material.t && kr < 1) {
+            Ray refraction_ray = Ray();
+            refraction_ray.direction = refract(ray.direction, hit.normal, hit.what->material.ior, cos_i);
+            refraction_ray.direction.normalise();
+
+            refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
+
+            colour = colour + (1 - kr) * raytrace(scene, refraction_ray, depth - 1);
+        }
     }
     return colour;
 }
@@ -138,4 +153,64 @@ bool object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Verte
         }
     }
     return false;
+}
+
+// Fresnel Equations as per wikipedia.
+// https://en.wikipedia.org/wiki/Fresnel_equations
+float fresnel(float refractive_index, float cos_i) {
+    float n1, n2;
+
+    if (cos_i < 0) {
+        // outside
+        n1 = 1; // ior of air
+        n2 = refractive_index; //ior of medium
+        cos_i = -cos_i;
+    }
+    else {
+        n1 = refractive_index;
+        n2 = 1;
+    }
+
+    float n = n1 / n2;
+    float sin_t_squared = n * n * max((1.0 - cos_i * cos_i), 0.0);
+    // as per snell's law, if >1, total internal reflection
+    if (sqrt(sin_t_squared) >= 1) {
+        return 1;
+    }
+    else {
+        float cos_t = sqrt(1.0 - sin_t_squared);
+
+        // Fresnel Equations
+        // p-polarised
+        float per = ((n2 * cos_i) - (n1 * cos_t)) /
+                    ((n2 * cos_i) + (n1 * cos_t));
+        // s-polarised
+        float par = ((n2 * cos_t) - (n1 * cos_i)) /
+                    ((n2 * cos_t) + (n1 * cos_i));
+
+        return (per * per + par * par) / 2;
+    }
+}
+
+Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i) {
+    float n1, n2;
+    if (cos_i < 0) {
+        // outside
+        n1 = 1; // ior of air
+        n2 = refractive_index; //ior of medium
+        cos_i = -cos_i;
+    }
+    else {
+        n1 = refractive_index;
+        n2 = 1;
+        normal.negate();
+    }
+
+    float n = n1 / n2;
+    float sin_t_squared = n * n * (1.0 - cos_i * cos_i);
+    float cos_t = sqrt(1.0 - sin_t_squared);
+
+    Vector refracted_ray = n * incident_ray + (n * cos_i - cos_t) * normal;
+    refracted_ray.normalise();
+    return refracted_ray;
 }

@@ -21,13 +21,9 @@
 
 using namespace std;
 
-PolyMesh::PolyMesh(char *file) : PolyMesh(file, new Transform()){
+PolyMesh::PolyMesh(char *file) : PolyMesh(file, new Transform()){}
 
-}
-
-PolyMesh::PolyMesh(char *file, Transform *transform) : PolyMesh(file, transform, Material())
-{
-}
+PolyMesh::PolyMesh(char *file, Transform *transform) : PolyMesh(file, transform, Material()) {}
 
 PolyMesh::PolyMesh(char *file, Transform *transform, Material material) : Object(material){
     this->do_construct(file, transform);
@@ -89,7 +85,7 @@ vector<string> PolyMesh::split_string(string line) {
     return words;
 }
 
-bool PolyMesh::find_bounding_sphere_values(Vertex centre, float radius) {
+void PolyMesh::find_bounding_sphere_values(Vertex centre, float radius) {
     //Implementation of Jack Ritter's Bounding Sphere algorithm.
 
     //assume any point as min and max
