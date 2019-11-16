@@ -23,8 +23,8 @@ Vector refract(Vector incident_ray, Vector normal, float refractive_index, float
 
 int main(int argc, char *argv[])
 {
-  int width = 200;
-  int height = 200;
+  int width = 150;
+  int height = 150;
 
   // Create a framebuffer
   FrameBuffer *fb = new FrameBuffer(width,height);
@@ -33,14 +33,14 @@ int main(int argc, char *argv[])
   Vertex look = Vertex(0,0,1);
   Vector up = Vector(0,1,0);
   // TODO move this to the scene?
-  Camera *camera = new Camera(eye, look, up, 1, 65, height, width);
+  Camera *camera = new Camera(eye, look, up, 1, 50, height, width);
   Scene *scene = new Scene(0.9);
 
   for(int c = 0; c < width; c++) {
       for(int r = 0; r < height; r++) {
           Ray ray = Ray(eye, camera->get_ray_direction(c, r));
 
-          Vector colour = raytrace(scene, ray, 3);
+          Vector colour = raytrace(scene, ray, 5);
           fb->plotPixel(c, r, colour.x, colour.y, colour.z);
       }
   }
@@ -110,7 +110,6 @@ Vector raytrace(Scene *scene, Ray &ray, int depth) {
             Ray reflection_ray;
             hit.normal.reflection(ray.direction, reflection_ray.direction);
             reflection_ray.direction.normalise();
-
             reflection_ray.position = cos_i < 0 ? hit.position + shift_bias : hit.position + -shift_bias;
 
             colour = colour +  kr * raytrace(scene, reflection_ray, depth - 1);

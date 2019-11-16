@@ -1,0 +1,4 @@
+#ifndef CODE_PHOTON_MAP_H
+#define CODE_PHOTON_MAP_H
+
+#endif //CODE_PHOTON_MAP_H

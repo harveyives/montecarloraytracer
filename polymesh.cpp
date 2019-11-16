@@ -174,7 +174,6 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
             ac.cross(ab, hit.normal);
             hit.normal.normalise();
 
-
             hit.flag = true;
             hit.what = this;
         }
