@@ -8,6 +8,7 @@
 #pragma once
 
 #include <math.h>
+#include <iostream>
 
 class Vector {
 public:
@@ -83,8 +84,15 @@ public:
     }
 
 
-    Vector operator * (float s)
-    {
+    void to_string() {
+        std::cout << x << " " << y << " " << z;
+    };
+
+    /**
+     * OVERLOADS
+     */
+
+    Vector operator*(float s) {
         return {s * x, s * y, s * z};
     }
 

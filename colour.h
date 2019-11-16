@@ -8,7 +8,6 @@
 
 #include "vertex.h"
 #include "vector.h"
-
 class Colour {
 public:
     int r;

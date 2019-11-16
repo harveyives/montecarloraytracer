@@ -13,6 +13,7 @@
 #include "vertex.h"
 #include "vector.h"
 #include "scene.h"
+#include "photon_map.h"
 
 using namespace std;
 
@@ -21,6 +22,7 @@ Vector raytrace(Scene *scene, Ray &ray, int depth);
 float fresnel(float refractive_index, float cos_i);
 Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i);
 
+PhotonMap *pm = new PhotonMap();
 int main(int argc, char *argv[])
 {
   int width = 150;
@@ -36,16 +38,19 @@ int main(int argc, char *argv[])
   Camera *camera = new Camera(eye, look, up, 1, 50, height, width);
   Scene *scene = new Scene(0.9);
 
+
+    pm->trace(2000000, {0, 30, 25}, scene->objects);
+    pm->sample({0.5, 0.5, 0.5}, 3);
   for(int c = 0; c < width; c++) {
       for(int r = 0; r < height; r++) {
           Ray ray = Ray(eye, camera->get_ray_direction(c, r));
 
-          Vector colour = raytrace(scene, ray, 5);
+          Vector colour = raytrace(scene, ray, 2);
           fb->plotPixel(c, r, colour.x, colour.y, colour.z);
       }
   }
 
-  // Output the framebuffer.
+//   Output the framebuffer.
   fb->writeRGBFile((char *)"test.ppm");
   return 0;
 }
@@ -65,7 +70,10 @@ Vector raytrace(Scene *scene, Ray &ray, int depth) {
         }
     }
     if (hit.flag) {
+        // TODO change these ugly pointers
+        colour = pm->sample(hit.position, 6);
         Vector hit_colour = hit.what->material.colour;
+
         for(Light *light : scene->lights) {
             if(object_occluded(scene->objects, hit.position, light->position)) {
                 continue;

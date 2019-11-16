@@ -33,11 +33,12 @@ public:
 //                0, 5, 0, 5.0,
 //                0, 0, 5, 1);
         Transform *transform_pyramid = new Transform(
-                3, 0, 0, 0,
-                0, 0, 3, 0,
-                0, 3, 0, 15.0,
-                0, 0, 3, 1);
-        PolyMesh *pyramid = new PolyMesh((char *) "pyramid.ply", transform_pyramid, Material({0, 255, 0}, 0.8, 0.1, 1.01, 1.3, 0.98));
+                5, 0, 0, -2.5,
+                0, 0, 5, 0,
+                0, 5, 0, 20.0,
+                0, 0, 5, 1);
+        PolyMesh *pyramid = new PolyMesh((char *) "pyramid.ply", transform_pyramid,
+                                         Material({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
 
         // Spheres
         Sphere *sphere = new Sphere(Vertex(-5, 0, 50), 12, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 1));
@@ -47,7 +48,7 @@ public:
 
         // Cornell Box
         Material wall = Material({255, 255, 255}, 0.4, 0.3, 1);
-        Plane *top = new Plane(Vertex(0,35,0),Vector(0,-1,0), wall.set_colour({0,0,255}));
+        Plane *top = new Plane(Vertex(0, 35, 0), Vector(0, -1, 0), wall);
         Plane *bottom = new Plane(Vertex(0,-35,0),Vector(0,1,0), wall);
         Plane *left = new Plane(Vertex(-35,0,0),Vector(1,0,0), wall.set_colour({255,0,0}));
         Plane *right = new Plane(Vertex(35,0,0),Vector(-1,0,0), wall.set_colour({0,255,0}));
@@ -56,9 +57,9 @@ public:
 
         // Adding to list
 //        objects.push_back(pm);
-        objects.push_back(pyramid);
+//        objects.push_back(pyramid);
 
-//        objects.push_back(sphere);
+        objects.push_back(sphere);
         objects.push_back(sphere_yellow);
 //        objects.push_back(sphere3);
 //        objects.push_back(sphere4);
@@ -71,7 +72,7 @@ public:
 //        objects.push_back(behind);
 
         // Adding lights:
-        Light *l1 = new PointLight(Vertex(-10,10,-5));
+        Light *l1 = new PointLight(Vertex({0, 30, 25}));
 //        Light *l2 = new PointLight(Vertex(-9,10,-5));
         Light *l3 = new DirectionalLight(Vector(0,0,-1));
 
