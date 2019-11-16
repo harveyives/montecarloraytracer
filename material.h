@@ -14,11 +14,11 @@ public:
     float ks;
     float kd;
     float ior;
-    bool r;
-    bool t;
+    float r;
+    float t;
 
     Material(Vector c = {255, 255, 255}, float specular = 0.2, float diffuse = 0.5, float refractive_index = 1,
-             bool reflective = false, bool transparent = false) {
+             float reflective = 0, float transparent = 0) {
         colour = c;
         ks = specular;
         kd = diffuse;

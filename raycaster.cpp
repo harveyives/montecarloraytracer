@@ -23,8 +23,8 @@ Vector refract(Vector incident_ray, Vector normal, float refractive_index, float
 
 int main(int argc, char *argv[])
 {
-  int width = 256;
-  int height = 256;
+  int width = 200;
+  int height = 200;
 
   // Create a framebuffer
   FrameBuffer *fb = new FrameBuffer(width,height);
@@ -33,8 +33,8 @@ int main(int argc, char *argv[])
   Vertex look = Vertex(0,0,1);
   Vector up = Vector(0,1,0);
   // TODO move this to the scene?
-  Camera *camera = new Camera(eye, look, up, 1, 90, height, width);
-  Scene *scene = new Scene(0.7);
+  Camera *camera = new Camera(eye, look, up, 1, 65, height, width);
+  Scene *scene = new Scene(0.9);
 
   for(int c = 0; c < width; c++) {
       for(int r = 0; r < height; r++) {
@@ -66,7 +66,6 @@ Vector raytrace(Scene *scene, Ray &ray, int depth) {
     }
     if (hit.flag) {
         Vector hit_colour = hit.what->material.colour;
-
         for(Light *light : scene->lights) {
             if(object_occluded(scene->objects, hit.position, light->position)) {
                 continue;
@@ -91,23 +90,23 @@ Vector raytrace(Scene *scene, Ray &ray, int depth) {
             if (specular < 0) {
                 specular = 0.0;
             }
-            //TODO colour individual channels? 
             colour = colour + hit_colour * diffuse * hit.what->material.kd + hit_colour * pow(specular, 128) * hit.what->material.ks;
         }
-        colour = colour + hit_colour * scene->ka;
+        // multiply by how transparent it is
+        colour = colour + hit_colour * scene->ka * (1 - hit.what->material.t);
         colour = colour / scene->lights.size();
 
 
         // cos(theta1)
         float cos_i = max(-1.f, min(ray.direction.dot(hit.normal), 1.f));
-        // compute kr by Fresnel
-        float kr = fresnel(hit.what->material.ior, cos_i);
+        // compute kr by Fresnel only if transparent
+        float kr = (hit.what->material.t != 0) ? fresnel(hit.what->material.ior, cos_i) : hit.what->material.r;
 
         // Remove speckles TODO reuse this in shadow
-        Vector shift_bias = 0.01 * hit.normal;
+        Vector shift_bias = 0.001 * hit.normal;
 
         // only compute if reflective material
-        if(hit.what->material.r){
+        if(hit.what->material.r != 0){
             Ray reflection_ray;
             hit.normal.reflection(ray.direction, reflection_ray.direction);
             reflection_ray.direction.normalise();
@@ -116,10 +115,8 @@ Vector raytrace(Scene *scene, Ray &ray, int depth) {
 
             colour = colour +  kr * raytrace(scene, reflection_ray, depth - 1);
         }
-
-        // only compute if transparent material
         // if kr = 1 then total internal reflection, so only reflect
-        if (hit.what->material.t && kr < 1) {
+        if (hit.what->material.t != 0 && kr < 1) {
             Ray refraction_ray = Ray();
             refraction_ray.direction = refract(ray.direction, hit.normal, hit.what->material.ior, cos_i);
             refraction_ray.direction.normalise();

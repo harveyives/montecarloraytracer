@@ -71,9 +71,9 @@ void PolyMesh::do_construct(char *file, Transform *transform)
     for(int i = 0; i < triangle_count; i++) {
         getline(f, line);
         vector<string> temp = this->split_string(line);
-        triangles[i][0] = stoi(temp[1])-1;
-        triangles[i][1] = stoi(temp[2])-1;
-        triangles[i][2] = stoi(temp[3])-1;
+        triangles[i][0] = stoi(temp[1]);
+        triangles[i][1] = stoi(temp[2]);
+        triangles[i][2] = stoi(temp[3]);
     }
     PolyMesh::triangle = triangles;
 }
@@ -171,7 +171,7 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
             hit.t = t;
             hit.position = ray.position + t * ray.direction;
             //triangle normal
-            ab.cross(ac, hit.normal);
+            ac.cross(ab, hit.normal);
             hit.normal.normalise();
 
 
