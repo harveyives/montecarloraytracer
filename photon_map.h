@@ -5,6 +5,7 @@
 #include <iostream>
 #include "vertex.h"
 #include "photon.h"
+#include "Object.h"
 #include <cstdlib>
 
 /**
@@ -58,7 +59,7 @@ class PhotonMap {
 public:
     PointCloud<float> cloud;
 
-    void trace(int n, Vertex start, std::vector<Object *> objects) {
+    void trace(int n, Vertex start, vector<Object *> objects) {
         vector<Photon> photons;
         Vertex position = start;
 

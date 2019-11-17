@@ -1,81 +1,41 @@
-/***************************************************************************
- *
- * krt - Kens Raytracer - Coursework Edition. (C) Copyright 1997-2019.
- *
- * Do what you like with this code as long as you retain this comment.
- */
-#include <iostream>
-#include <string>
-#include <math.h>
-#include "framebuffer.h"
-#include "sphere.h"
-#include "camera.h"
-#include "vertex.h"
-#include "vector.h"
-#include "scene.h"
 #include "photon_map.h"
+#include "vector.h"
+#include "vertex.h"
+#include "camera.h"
+#include "sphere.h"
+#include "framebuffer.h"
+#include <math.h>
+#include <string>
+#include <iostream>
+#include "scene.h"
 
-using namespace std;
-
-bool object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Vertex &light_position);
-Vector raytrace(Scene *scene, Ray &ray, int depth);
-float fresnel(float refractive_index, float cos_i);
-Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i);
-
-PhotonMap *pm = new PhotonMap();
-int main(int argc, char *argv[])
-{
-  int width = 150;
-  int height = 150;
-
-  // Create a framebuffer
-  FrameBuffer *fb = new FrameBuffer(width,height);
-
-  Vertex eye = Vertex(0,0,0);
-  Vertex look = Vertex(0,0,1);
-  Vector up = Vector(0,1,0);
-  // TODO move this to the scene?
-  Camera *camera = new Camera(eye, look, up, 1, 50, height, width);
-  Scene *scene = new Scene(0.9);
-
-
-    pm->trace(2000000, {0, 30, 25}, scene->objects);
-    pm->sample({0.5, 0.5, 0.5}, 3);
-  for(int c = 0; c < width; c++) {
-      for(int r = 0; r < height; r++) {
-          Ray ray = Ray(eye, camera->get_ray_direction(c, r));
-
-          Vector colour = raytrace(scene, ray, 2);
-          fb->plotPixel(c, r, colour.x, colour.y, colour.z);
-      }
-  }
-
-//   Output the framebuffer.
-  fb->writeRGBFile((char *)"test.ppm");
-  return 0;
-}
-
-Vector raytrace(Scene *scene, Ray &ray, int depth) {
-    Hit hit = Hit();
-    Vector colour = {0,0,0};
-    if(depth <= 0) return colour;
-    for (Object *obj : scene->objects) {
+Hit Scene::raytrace(Ray &ray, Hit &hit) {
+    for (Object *obj : objects) {
         Hit obj_hit = Hit();
 
         obj->intersection(ray, obj_hit);
-        if(obj_hit.flag) {
-            if(obj_hit.t < hit.t) {
+        if (obj_hit.flag) {
+            if (obj_hit.t < hit.t) {
                 hit = obj_hit;
             }
         }
     }
+    return hit;
+}
+
+Vector Scene::compute_colour(Ray &ray, int depth) {
+    Vector colour = {0, 0, 0};
+    if (depth <= 0) return colour;
+    Hit hit = Hit();
+    raytrace(ray, hit);
+
     if (hit.flag) {
         // TODO change these ugly pointers
-        colour = pm->sample(hit.position, 6);
+//        colour = pm->sample(hit.position, 6);
         Vector hit_colour = hit.what->material.colour;
 
-        for(Light *light : scene->lights) {
-            if(object_occluded(scene->objects, hit.position, light->position)) {
+        for (Light *light : lights) {
+            if (object_occluded(objects, hit.position, light->position)) {
                 continue;
             }
 
@@ -84,7 +44,7 @@ Vector raytrace(Scene *scene, Ray &ray, int depth) {
             light_direction.normalise();
 
             // diffuse
-            float diffuse =  light_direction.dot(hit.normal);
+            float diffuse = light_direction.dot(hit.normal);
             //thus self occlusion
             if (diffuse < 0) {
                 continue;
@@ -98,11 +58,12 @@ Vector raytrace(Scene *scene, Ray &ray, int depth) {
             if (specular < 0) {
                 specular = 0.0;
             }
-            colour = colour + hit_colour * diffuse * hit.what->material.kd + hit_colour * pow(specular, 128) * hit.what->material.ks;
+            colour = colour + hit_colour * diffuse * hit.what->material.kd +
+                     hit_colour * pow(specular, 128) * hit.what->material.ks;
         }
         // multiply by how transparent it is
-        colour = colour + hit_colour * scene->ka * (1 - hit.what->material.t);
-        colour = colour / scene->lights.size();
+        colour = colour + hit_colour * ka * (1 - hit.what->material.t);
+        colour = colour / lights.size();
 
 
         // cos(theta1)
@@ -114,13 +75,13 @@ Vector raytrace(Scene *scene, Ray &ray, int depth) {
         Vector shift_bias = 0.001 * hit.normal;
 
         // only compute if reflective material
-        if(hit.what->material.r != 0){
+        if (hit.what->material.r != 0) {
             Ray reflection_ray;
             hit.normal.reflection(ray.direction, reflection_ray.direction);
             reflection_ray.direction.normalise();
             reflection_ray.position = cos_i < 0 ? hit.position + shift_bias : hit.position + -shift_bias;
 
-            colour = colour +  kr * raytrace(scene, reflection_ray, depth - 1);
+            colour = colour + kr * compute_colour(reflection_ray, depth - 1);
         }
         // if kr = 1 then total internal reflection, so only reflect
         if (hit.what->material.t != 0 && kr < 1) {
@@ -130,13 +91,13 @@ Vector raytrace(Scene *scene, Ray &ray, int depth) {
 
             refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
 
-            colour = colour + (1 - kr) * raytrace(scene, refraction_ray, depth - 1);
+            colour = colour + (1 - kr) * compute_colour(refraction_ray, depth - 1);
         }
     }
     return colour;
 }
 
-bool object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Vertex &light_position) {
+bool Scene::object_occluded(vector<Object *> &objects, Vertex &hit_position, Vertex &light_position) {
     Ray shadow = Ray();
     shadow.position = hit_position;
     shadow.direction = light_position - hit_position;
@@ -152,7 +113,7 @@ bool object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Verte
         obj_shadow_hit.flag = false;
 
         obj->intersection(shadow, obj_shadow_hit);
-        if(obj_shadow_hit.flag && obj_shadow_hit.t < distance_to_light) {
+        if (obj_shadow_hit.flag && obj_shadow_hit.t < distance_to_light) {
             return true;
         }
     }
@@ -161,7 +122,7 @@ bool object_occluded(std::vector<Object *> &objects, Vertex &hit_position, Verte
 
 // Fresnel Equations as per wikipedia.
 // https://en.wikipedia.org/wiki/Fresnel_equations
-float fresnel(float refractive_index, float cos_i) {
+float Scene::fresnel(float refractive_index, float cos_i) {
     float n1, n2;
 
     if (cos_i < 0) {
@@ -169,8 +130,7 @@ float fresnel(float refractive_index, float cos_i) {
         n1 = 1; // ior of air
         n2 = refractive_index; //ior of medium
         cos_i = -cos_i;
-    }
-    else {
+    } else {
         n1 = refractive_index;
         n2 = 1;
     }
@@ -180,8 +140,7 @@ float fresnel(float refractive_index, float cos_i) {
     // as per snell's law, if >1, total internal reflection
     if (sqrt(sin_t_squared) >= 1) {
         return 1;
-    }
-    else {
+    } else {
         float cos_t = sqrt(1.0 - sin_t_squared);
 
         // Fresnel Equations
@@ -196,15 +155,14 @@ float fresnel(float refractive_index, float cos_i) {
     }
 }
 
-Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i) {
+Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i) {
     float n1, n2;
     if (cos_i < 0) {
         // outside
         n1 = 1; // ior of air
         n2 = refractive_index; //ior of medium
         cos_i = -cos_i;
-    }
-    else {
+    } else {
         n1 = refractive_index;
         n2 = 1;
         normal.negate();

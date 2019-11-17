@@ -8,15 +8,21 @@
 #include "point_light.h"
 #include "directional_light.h"
 #include "plane.h"
+#include "sphere.h"
+#include "photon_map.h"
+
+using namespace std;
 
 class Scene {
 public:
-    std::vector<Object*> objects;
-    std::vector<Light*> lights;
+    vector<Object *> objects;
+    vector<Light *> lights;
+    PhotonMap *photon_map;
     float ka;
 
     Scene(float ambient = 1) {
         ka = ambient;
+        photon_map = new PhotonMap();
 
         // Adding objects:
 
@@ -27,11 +33,7 @@ public:
                 0, 1.5, 0, 25.0,
                 0, 0, 1.5, 1);
         PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Material({0, 255, 0}, 0.8, 0.1, 1, 0.4, 0));
-//        Transform *transform_pyramid = new Transform(
-//                5, 0, 0, -2.5,
-//                0, 0, 5, -2,
-//                0, 5, 0, 5.0,
-//                0, 0, 5, 1);
+
         Transform *transform_pyramid = new Transform(
                 5, 0, 0, -2.5,
                 0, 0, 5, 0,
@@ -79,6 +81,20 @@ public:
         // Adding to list
         lights.push_back(l1);
 //        lights.push_back(l3);
+
+
+        photon_map->trace(0, {0, 30, 25}, objects);
+        photon_map->sample({0.5, 0.5, 0.5}, 3);
     };
+
+    Hit raytrace(Ray &ray, Hit &hit);
+
+    Vector compute_colour(Ray &ray, int depth);
+
+    bool object_occluded(vector<Object *> &objects, Vertex &hit_position, Vertex &light_position);
+
+    float fresnel(float refractive_index, float cos_i);
+
+    Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i);
 };
 #endif //CODE_SCENE_H
