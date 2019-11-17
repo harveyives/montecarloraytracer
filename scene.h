@@ -96,5 +96,7 @@ public:
     float fresnel(float refractive_index, float cos_i);
 
     Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i);
+
+    float compute_specular_component(Ray &ray, Hit &hit, Vector &light_direction) const;
 };
 #endif //CODE_SCENE_H

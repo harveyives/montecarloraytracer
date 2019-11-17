@@ -5,7 +5,7 @@
 #include <iostream>
 #include "vertex.h"
 #include "photon.h"
-#include "Object.h"
+#include "object.h"
 #include <cstdlib>
 
 /**

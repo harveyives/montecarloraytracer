@@ -50,14 +50,8 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
                 continue;
             }
 
-            // specular
-            Vector reflection = Vector();
-            hit.normal.reflection(light_direction, reflection);
-            float specular = reflection.dot(ray.direction);
-            // thus no contribution
-            if (specular < 0) {
-                specular = 0.0;
-            }
+            float specular = compute_specular_component(ray, hit, light_direction);
+
             colour = colour + hit_colour * diffuse * hit.what->material.kd +
                      hit_colour * pow(specular, 128) * hit.what->material.ks;
         }
@@ -95,6 +89,17 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
         }
     }
     return colour;
+}
+
+float Scene::compute_specular_component(Ray &ray, Hit &hit, Vector &light_direction) const {
+    Vector reflection = Vector();
+    hit.normal.reflection(light_direction, reflection);
+    float specular = reflection.dot(ray.direction);
+    // thus no contribution
+    if (specular < 0) {
+        specular = 0.0;
+    }
+    return specular;
 }
 
 bool Scene::object_occluded(vector<Object *> &objects, Vertex &hit_position, Vertex &light_position) {
