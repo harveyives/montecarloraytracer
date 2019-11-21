@@ -1,4 +1,3 @@
-#include "photon_map.h"
 #include "vector.h"
 #include "vertex.h"
 #include "camera.h"
@@ -7,9 +6,75 @@
 #include <math.h>
 #include <string>
 #include <iostream>
+#include <cstring>
+#include <random>
 #include "scene.h"
 
-Hit Scene::raytrace(Ray &ray, Hit &hit) {
+Scene::Scene(float ambient) {
+    ka = ambient;
+
+    // Adding objects:
+
+    // Polys
+//    Transform *transform = new Transform(
+//            1.5, 0, 0, 2,
+//            0, 0, 1.5, -2,
+//            0, 1.5, 0, 25.0,
+//            0, 0, 1.5, 1);
+//    PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Material({0, 255, 0}, 0.8, 0.1, 1, 0.4, 0));
+
+    Transform *transform_pyramid = new Transform(
+            5, 0, 0, -2.5,
+            0, 0, 5, 0,
+            0, 5, 0, 20.0,
+            0, 0, 5, 1);
+    PolyMesh *pyramid = new PolyMesh((char *) "cube.ply", transform_pyramid,
+                                     Material({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
+
+    // Spheres
+    Sphere *sphere = new Sphere(Vertex(-5, 0, 50), 12, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 1));
+    Sphere *sphere_yellow = new Sphere(Vertex(5, 10, 110), 15, Material({255, 255, 0}, 0, 0.4));
+    Sphere *sphere3 = new Sphere(Vertex(4, 4, 15), 1, Material({0, 0, 255}, 0.9, 0.6, 2, 1, 0));
+    Sphere *sphere4 = new Sphere(Vertex(12, 8, 35), 12, Material({255, 0, 0}, 0, 0.4, 1));
+
+    // Cornell Box
+    Material wall = Material({255, 255, 255}, 0.4, 0.3, 1);
+    Plane *top = new Plane(Vertex(0, 35, 0), Vector(0, -1, 0), wall);
+    Plane *bottom = new Plane(Vertex(0, -35, 0), Vector(0, 1, 0), wall);
+    Plane *left = new Plane(Vertex(-35, 0, 0), Vector(1, 0, 0), wall.set_colour({255, 0, 0}));
+    Plane *right = new Plane(Vertex(35, 0, 0), Vector(-1, 0, 0), wall.set_colour({0, 255, 0}));
+    Plane *back = new Plane(Vertex(0, 0, 150), Vector(0, 0, -1), wall);
+    Plane *behind = new Plane(Vertex(0, 0, -50), Vector(0, 0, 1), wall);
+
+    // Adding to list
+//        objects.push_back(pm);
+    objects.push_back(pyramid);
+
+//    objects.push_back(sphere);
+    objects.push_back(sphere_yellow);
+//        objects.push_back(sphere3);
+//        objects.push_back(sphere4);
+
+    objects.push_back(top);
+    objects.push_back(bottom);
+    objects.push_back(left);
+    objects.push_back(right);
+    objects.push_back(back);
+//        objects.push_back(behind);
+
+    // Adding lights:
+    Light *l1 = new PointLight(Vertex({0, 30, 25}));
+//        Light *l2 = new PointLight(Vertex(-9,10,-5));
+    Light *l3 = new DirectionalLight(Vector(0, 0, -1));
+
+    // Adding to list
+    lights.push_back(l1);
+//        lights.push_back(l3);
+
+    emit_photons(150000);
+}
+
+Hit Scene::check_intersections(Ray &ray, Hit &hit) {
     for (Object *obj : objects) {
         Hit obj_hit = Hit();
 
@@ -27,17 +92,21 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
     Vector colour = {0, 0, 0};
     if (depth <= 0) return colour;
     Hit hit = Hit();
-    raytrace(ray, hit);
+    check_intersections(ray, hit);
 
     if (hit.flag) {
+//        return sample(hit.position, 2);
+//        cout<<colour.x<<colour.y<<colour.z<<endl;
         // TODO change these ugly pointers
 //        colour = pm->sample(hit.position, 6);
         Vector hit_colour = hit.what->material.colour;
 
         for (Light *light : lights) {
+            // if area shaded
             if (object_occluded(objects, hit.position, light->position)) {
                 continue;
             }
+            hit_colour = sample(hit.position, 3);
 
             //get light direction based on point if point light, otherwise get directional light
             Vector light_direction = light->get_light_direction(hit.position);
@@ -180,4 +249,87 @@ Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index
     Vector refracted_ray = n * incident_ray + (n * cos_i - cos_t) * normal;
     refracted_ray.normalise();
     return refracted_ray;
+}
+
+void Scene::emit_photons(int n) {
+    cout << "Mapping photons..." << endl;
+    for (Light *light : lights) {
+        for (int i = 0; i < n; i++) {
+            // TODO improve this for other lights
+            Vector direction = get_random_direction();
+            Ray ray = Ray(light->position, direction);
+            Photon photon = Photon(ray, Vector(), photon_type::regular);
+            trace_photon(photon, 5, true);
+        }
+    }
+
+    tree = KDTree(points);
+    cout << "Mapping complete." << endl;
+}
+
+void Scene::trace_photon(Photon photon, int depth, bool first_intersection = false) {
+    if (depth <= 0) return;
+
+    Hit hit = Hit();
+    check_intersections(photon.ray, hit);
+    if (hit.flag) {
+        photon.ray.position = hit.position;
+        photon.colour = hit.what->material.colour;
+        if (!first_intersection) photon.type = photon_type::shadow;
+        photons.push_back(photon);
+        points.push_back({photon.ray.position.x, photon.ray.position.y, photon.ray.position.z});
+
+        // Russian Roulette
+        // TODO refactor this
+        int p = get_random_number(0, 100);
+        if (p <= 10) {
+            // absorb
+            return;
+        } else if (p <= 70) {
+            if (hit.what->material.r != 0) {
+                // reflect
+                Vector reflection = Vector();
+                hit.normal.reflection(photon.ray.direction, photon.ray.direction);
+                photon.type = photon_type::shadow;
+                trace_photon(photon, depth - 1, false);
+            }
+        } else {
+            if (hit.what->material.r != 0) {
+                // transmit
+                float cos_i = max(-1.f, min(photon.ray.direction.dot(hit.normal), 1.f));
+                photon.ray.direction = refract(photon.ray.direction, hit.normal, hit.what->material.ior,
+                                               cos_i);
+                trace_photon(photon, depth - 1, false);
+            }
+        }
+    }
+}
+
+Vector Scene::sample(Vertex query_pt, float radius) {
+    auto points = tree.neighborhood_indices({query_pt.x, query_pt.y, query_pt.z}, radius);
+//    auto n = tree.neighborhood({query_pt.x, query_pt.y, query_pt.z}, radius);
+    // TODO fix library?
+    Vector colour = Vector();
+    if (!points.empty()) {
+        for (int i = 0; i < points.size(); i++) {
+            colour = colour + photons[points[i]].colour;
+            //float dist = sqrt(points_points[i][0] * points_points[i][0] + points_points[i][0] * points_points[i][0] + points_points[i][0] * points_points[i][0]);
+        }
+        colour = colour / points.size();
+    }
+    return colour;
+}
+
+Vector Scene::get_random_direction() {
+    Vector direction = Vector(get_random_number(INT32_MIN, INT32_MAX), get_random_number(INT32_MIN, INT32_MAX),
+                              get_random_number(INT32_MIN, INT32_MAX));
+    direction.normalise();
+    return direction;
+}
+
+int Scene::get_random_number(int min, int max) {
+    random_device device;
+    mt19937 random(device());
+    uniform_int_distribution<mt19937::result_type> distribution(min, max);
+    return distribution(random);
 }

@@ -10,6 +10,7 @@
 #include "vector.h"
 class Colour {
 public:
+    //todo remove this?
     int r;
     int g;
     int b;

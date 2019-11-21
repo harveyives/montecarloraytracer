@@ -9,8 +9,9 @@
 using namespace std;
 
 enum class photon_type {
+    regular,
     shadow,
-    regular
+    caustic
 };
 
 class Photon {
