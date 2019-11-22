@@ -49,5 +49,11 @@ public:
     void trace_photon(Photon photon, int depth, bool first_intersection);
 
     void emit_photons(int n);
+
+    Photon get_nearest_photon(Vertex query);
+
+    vector<Photon> gather_photons(Vertex query);
+
+    photon_type get_majority_type(Vertex query);
 };
 #endif //CODE_SCENE_H

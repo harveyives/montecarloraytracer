@@ -14,6 +14,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <map>
+#include <algorithm>
 
 using namespace alglib;
 
@@ -39,7 +41,7 @@ Scene::Scene(float ambient) {
 
     // Spheres
     Sphere *sphere = new Sphere(Vertex(-5, 0, 50), 12, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 1));
-    Sphere *sphere_yellow = new Sphere(Vertex(5, 10, 110), 15, Material({255, 255, 0}, 0, 0.4));
+    Sphere *sphere_yellow = new Sphere(Vertex(20, 10, 80), 15, Material({255, 255, 255}, 0.8, 0.4));
     Sphere *sphere3 = new Sphere(Vertex(4, 4, 15), 1, Material({0, 0, 255}, 0.9, 0.6, 2, 1, 0));
     Sphere *sphere4 = new Sphere(Vertex(12, 8, 35), 12, Material({255, 0, 0}, 0, 0.4, 1));
 
@@ -69,7 +71,7 @@ Scene::Scene(float ambient) {
 //        objects.push_back(behind);
 
     // Adding lights:
-    Light *l1 = new PointLight(Vertex({0, 30, 25}));
+    Light *l1 = new PointLight(Vertex({0, 30, 80}));
 //        Light *l2 = new PointLight(Vertex(-9,10,-5));
     Light *l3 = new DirectionalLight(Vector(0, 0, -1));
 
@@ -77,7 +79,7 @@ Scene::Scene(float ambient) {
     lights.push_back(l1);
 //        lights.push_back(l3);
 
-    emit_photons(500000);
+    emit_photons(250000);
     cout << "I'm running the scene\n";
     real_2d_array a;
     a.attach_to_ptr(points.size() / 3, 3, points.data());
@@ -115,14 +117,20 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 //        cout<<colour.x<<colour.y<<colour.z<<endl;
         // TODO change these ugly pointers
 //        colour = pm->sample(hit.position, 6);
-        Vector hit_colour = hit.what->material.colour;
+        Photon photon = get_nearest_photon(hit.position);
+
+        Vector hit_colour = (get_majority_type(hit.position) == photon_type::indirect) ? sample(hit.position)
+                                                                                       : hit.what->material.colour;
 
         for (Light *light : lights) {
             // if area shaded
+            if (get_majority_type(hit.position) == photon_type::shadow) {
+                continue;
+            }
             if (object_occluded(objects, hit.position, light->position)) {
                 continue;
             }
-            hit_colour = sample(hit.position);
+
 
             //get light direction based on point if point light, otherwise get directional light
             Vector light_direction = light->get_light_direction(hit.position);
@@ -138,7 +146,7 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
             float specular = compute_specular_component(ray, hit, light_direction);
 
             colour = colour + hit_colour * diffuse * hit.what->material.kd +
-                     hit_colour * pow(specular, 128) * hit.what->material.ks;
+                     hit.what->material.colour * pow(specular, 128) * hit.what->material.ks;
         }
         // multiply by how transparent it is
         colour = colour + hit_colour * ka * (1 - hit.what->material.t);
@@ -275,7 +283,7 @@ void Scene::emit_photons(int n) {
             // TODO improve this for other lights
             Vector direction = get_random_direction();
             Ray ray = Ray(light->position, direction);
-            Photon photon = Photon(ray, Vector(), photon_type::regular);
+            Photon photon = Photon(ray, Vector(), photon_type::direct);
             trace_photon(photon, 5, true);
         }
     }
@@ -291,8 +299,11 @@ void Scene::trace_photon(Photon photon, int depth, bool first_intersection = fal
     check_intersections(photon.ray, hit);
     if (hit.flag) {
         photon.ray.position = hit.position;
-        photon.colour = hit.what->material.colour;
-        if (!first_intersection) photon.type = photon_type::shadow;
+        if (!first_intersection) {
+            photon.type = photon_type::indirect;
+        } else {
+            photon.colour = hit.what->material.colour;
+        }
         photons.push_back(photon);
         tags.push_back(points.size() / 3);
         points.push_back(photon.ray.position.x);
@@ -314,7 +325,7 @@ void Scene::trace_photon(Photon photon, int depth, bool first_intersection = fal
                 trace_photon(photon, depth - 1, false);
             }
         } else {
-            if (hit.what->material.r != 0) {
+            if (hit.what->material.t != 0) {
                 // transmit
                 float cos_i = max(-1.f, min(photon.ray.direction.dot(hit.normal), 1.f));
                 photon.ray.direction = refract(photon.ray.direction, hit.normal, hit.what->material.ior,
@@ -323,6 +334,53 @@ void Scene::trace_photon(Photon photon, int depth, bool first_intersection = fal
             }
         }
     }
+}
+
+Photon Scene::get_nearest_photon(Vertex query) {
+    vector<double> point = {query.x, query.y, query.z};
+    real_1d_array x;
+    x.setcontent(3, point.data());
+
+    ae_int_t k = kdtreequeryknn(kdt, x, 1);
+    real_2d_array r = "[[]]";
+    integer_1d_array output_tags = "[]";
+    kdtreequeryresultstags(kdt, output_tags);
+    return photons[output_tags[0]];
+}
+
+vector<Photon> Scene::gather_photons(Vertex query) {
+    vector<double> point = {query.x, query.y, query.z};
+    real_1d_array x;
+    x.setcontent(3, point.data());
+
+    ae_int_t k = kdtreequeryknn(kdt, x, 10);
+    real_2d_array r = "[[]]";
+    integer_1d_array output_tags = "[]";
+    kdtreequeryresultstags(kdt, output_tags);
+
+    vector<Photon> local_photons;
+    for (int i = 0; i < 10; i++) {
+        local_photons.push_back(photons[output_tags[i]]);
+    }
+    return local_photons;
+}
+
+photon_type Scene::get_majority_type(Vertex query) {
+    vector<Photon> gathered_photons = gather_photons(query);
+    map<photon_type, int> map;
+    map.insert(make_pair(photon_type::direct, 0));
+    map.insert(make_pair(photon_type::indirect, 0));
+    map.insert(make_pair(photon_type::shadow, 0));
+    map.insert(make_pair(photon_type::caustic, 0));
+    for (Photon p: gathered_photons) {
+        map[p.type]++;
+    }
+
+    auto max = max_element(map.begin(), map.end(),
+                           [](const pair<photon_type, int> &a, const pair<photon_type, int> &b) {
+                               return a.second < b.second;
+                           });
+    return max->first;
 }
 
 Vector Scene::sample(Vertex query) {
@@ -335,7 +393,6 @@ Vector Scene::sample(Vertex query) {
     integer_1d_array output_tags = "[]";
     kdtreequeryresultstags(kdt, output_tags);
 
-    // TODO fix library?
     Vector colour = Vector();
     for (int i = 0; i < 10; i++) {
         colour = colour + photons[output_tags[i]].colour;
