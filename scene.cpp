@@ -9,10 +9,16 @@
 #include <cstring>
 #include <random>
 #include "scene.h"
+#include "alglib/stdafx.h"
+#include "alglib/alglibmisc.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+
+using namespace alglib;
 
 Scene::Scene(float ambient) {
     ka = ambient;
-
     // Adding objects:
 
     // Polys
@@ -22,14 +28,14 @@ Scene::Scene(float ambient) {
 //            0, 1.5, 0, 25.0,
 //            0, 0, 1.5, 1);
 //    PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Material({0, 255, 0}, 0.8, 0.1, 1, 0.4, 0));
-
-    Transform *transform_pyramid = new Transform(
-            5, 0, 0, -2.5,
-            0, 0, 5, 0,
-            0, 5, 0, 20.0,
-            0, 0, 5, 1);
-    PolyMesh *pyramid = new PolyMesh((char *) "cube.ply", transform_pyramid,
-                                     Material({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
+//
+//    Transform *transform_pyramid = new Transform(
+//            5, 0, 0, -2.5,
+//            0, 0, 5, 0,
+//            0, 5, 0, 20.0,
+//            0, 0, 5, 1);
+//    PolyMesh *pyramid = new PolyMesh((char *) "cube.ply", transform_pyramid,
+//                                     Material({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
 
     // Spheres
     Sphere *sphere = new Sphere(Vertex(-5, 0, 50), 12, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 1));
@@ -48,7 +54,7 @@ Scene::Scene(float ambient) {
 
     // Adding to list
 //        objects.push_back(pm);
-    objects.push_back(pyramid);
+//    objects.push_back(pyramid);
 
 //    objects.push_back(sphere);
     objects.push_back(sphere_yellow);
@@ -71,7 +77,17 @@ Scene::Scene(float ambient) {
     lights.push_back(l1);
 //        lights.push_back(l3);
 
-    emit_photons(150000);
+    emit_photons(500000);
+    cout << "I'm running the scene\n";
+    real_2d_array a;
+    a.attach_to_ptr(points.size() / 3, 3, points.data());
+    ae_int_t nx = 3;
+    ae_int_t ny = 0;
+    ae_int_t normtype = 2;
+    real_1d_array x;
+    integer_1d_array input;
+    input.setcontent(points.size() / 3, tags.data());
+    kdtreebuildtagged(a, input, nx, ny, normtype, kdt);
 }
 
 Hit Scene::check_intersections(Ray &ray, Hit &hit) {
@@ -106,7 +122,7 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
             if (object_occluded(objects, hit.position, light->position)) {
                 continue;
             }
-            hit_colour = sample(hit.position, 3);
+            hit_colour = sample(hit.position);
 
             //get light direction based on point if point light, otherwise get directional light
             Vector light_direction = light->get_light_direction(hit.position);
@@ -151,6 +167,7 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
             Ray refraction_ray = Ray();
             refraction_ray.direction = refract(ray.direction, hit.normal, hit.what->material.ior, cos_i);
             refraction_ray.direction.normalise();
+
 
             refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
 
@@ -263,7 +280,7 @@ void Scene::emit_photons(int n) {
         }
     }
 
-    tree = KDTree(points);
+    //tree = KDTree(points);
     cout << "Mapping complete." << endl;
 }
 
@@ -277,7 +294,10 @@ void Scene::trace_photon(Photon photon, int depth, bool first_intersection = fal
         photon.colour = hit.what->material.colour;
         if (!first_intersection) photon.type = photon_type::shadow;
         photons.push_back(photon);
-        points.push_back({photon.ray.position.x, photon.ray.position.y, photon.ray.position.z});
+        tags.push_back(points.size() / 3);
+        points.push_back(photon.ray.position.x);
+        points.push_back(photon.ray.position.y);
+        points.push_back(photon.ray.position.z);
 
         // Russian Roulette
         // TODO refactor this
@@ -305,18 +325,23 @@ void Scene::trace_photon(Photon photon, int depth, bool first_intersection = fal
     }
 }
 
-Vector Scene::sample(Vertex query_pt, float radius) {
-    auto points = tree.neighborhood_indices({query_pt.x, query_pt.y, query_pt.z}, radius);
-//    auto n = tree.neighborhood({query_pt.x, query_pt.y, query_pt.z}, radius);
+Vector Scene::sample(Vertex query) {
+    vector<double> point = {query.x, query.y, query.z};
+    real_1d_array x;
+    x.setcontent(3, point.data());
+
+    ae_int_t k = kdtreequeryknn(kdt, x, 10);
+    real_2d_array r = "[[]]";
+    integer_1d_array output_tags = "[]";
+    kdtreequeryresultstags(kdt, output_tags);
+
     // TODO fix library?
     Vector colour = Vector();
-    if (!points.empty()) {
-        for (int i = 0; i < points.size(); i++) {
-            colour = colour + photons[points[i]].colour;
-            //float dist = sqrt(points_points[i][0] * points_points[i][0] + points_points[i][0] * points_points[i][0] + points_points[i][0] * points_points[i][0]);
-        }
-        colour = colour / points.size();
+    for (int i = 0; i < 10; i++) {
+        colour = colour + photons[output_tags[i]].colour;
     }
+    colour = colour / 10;
+
     return colour;
 }
 

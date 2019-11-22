@@ -9,10 +9,12 @@
 #include "directional_light.h"
 #include "plane.h"
 #include "sphere.h"
-#include "KDTree.h"
 #include "photon.h"
+#include "alglib/stdafx.h"
+#include "alglib/alglibmisc.h"
 
 using namespace std;
+using namespace alglib;
 
 class Scene {
 public:
@@ -20,8 +22,9 @@ public:
     vector<Light *> lights;
     float ka;
     vector<Photon> photons;
-    pointVec points;
-    KDTree tree;
+    vector<double> points;
+    vector<long> tags;
+    kdtree kdt;
 
     Scene(float ambient = 1);
 
@@ -41,7 +44,7 @@ public:
 
     int get_random_number(int min, int max);
 
-    Vector sample(Vertex query_pt, float radius);
+    Vector sample(Vertex query);
 
     void trace_photon(Photon photon, int depth, bool first_intersection);
 

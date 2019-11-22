@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     Camera *camera = new Camera(eye, look, up, 1, 50, height, width);
     Scene *scene = new Scene(0.9);
 
-#pragma omp parallel for collapse(2)
+//    #pragma omp parallel for collapse(2)
     for (int c = 0; c < width; c++) {
       for(int r = 0; r < height; r++) {
           Ray ray = Ray(eye, camera->get_ray_direction(c, r));
