@@ -38,13 +38,13 @@ public:
 
     Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i);
 
-    float compute_specular_component(Ray &ray, Hit &hit, Vector &light_direction) const;
+    float compute_specular_component(Ray &ray, Hit &hit, Vector &direction) const;
 
-    Vector get_random_direction();
+    Vector get_random_direction(Vector normal);
 
-    int get_random_number(int min, int max);
+    float get_random_number(int min, int max);
 
-    Vector sample(Vertex query);
+    Vector sample(Vertex query, int k);
 
     void trace_photon(Photon photon, int depth, bool first_intersection);
 
@@ -52,8 +52,16 @@ public:
 
     Photon get_nearest_photon(Vertex query);
 
-    vector<Photon> gather_photons(Vertex query);
+    vector<Photon> gather_photons(Vertex query, int k);
 
     photon_type get_majority_type(Vertex query);
+
+    Vector gather_photons_with_type(Vertex query, photon_type t);
+
+    Vector approximate_indirect(Ray &ray, Hit &hit);
+
+    float BRDF(Hit hit, Vector incoming, Vector view);
+
+    Vector get_random_direction();
 };
 #endif //CODE_SCENE_H

@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     Vector up = Vector(0, 1, 0);
     // TODO move this to the scene?
     Camera *camera = new Camera(eye, look, up, 1, 50, height, width);
-    Scene *scene = new Scene(0.9);
+    Scene *scene = new Scene(0.6);
 
 //    #pragma omp parallel for collapse(2)
     for (int c = 0; c < width; c++) {
