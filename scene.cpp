@@ -41,7 +41,7 @@ Scene::Scene(float ambient) {
 
     // Spheres
     Sphere *sphere = new Sphere(Vertex(-5, 0, 50), 12, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 1));
-    Sphere *sphere_yellow = new Sphere(Vertex(8, 0, 40), 5, Material({255, 255, 255}, 0.6, 0.4));
+    Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, Material({255, 255, 255}, 0.0, 0.4));
     Sphere *sphere3 = new Sphere(Vertex(4, 4, 15), 1, Material({0, 0, 255}, 0.4, 0.6, 2, 1, 0));
     Sphere *sphere4 = new Sphere(Vertex(12, 8, 35), 12, Material({255, 0, 0}, 0, 0.4, 1));
 
@@ -73,7 +73,7 @@ Scene::Scene(float ambient) {
 //        objects.push_back(behind);
 
     // Adding lights:
-    Light *l1 = new PointLight(Vertex({-5, 10, 40}));
+    Light *l1 = new PointLight(Vertex({0, 10, 40}));
 //        Light *l2 = new PointLight(Vertex(-9,10,-5));
     Light *l3 = new DirectionalLight(Vector(0, 0, -1));
 
@@ -125,23 +125,11 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 //            if (object_occluded(objects, hit.position, light->position)) {
 //                continue;
 //            }
-//
-//
 //            //get light direction based on point if point light, otherwise get directional light
 //            Vector light_direction = light->get_light_direction(hit.position);
 //            light_direction.normalise();
+//            colour = colour + hit.what->material.shade(ray.direction, light_direction, hit.normal);
 //
-//            // diffuse
-//            float diffuse = light_direction.dot(hit.normal);
-//            //thus self occlusion
-//            if (diffuse < 0) {
-//                continue;
-//            }
-//
-//            float specular = compute_specular_component(ray, hit, light_direction);
-//
-//            colour = colour + hit_colour * diffuse * hit.what->material.kd +
-//                     hit.what->material.colour * pow(specular, 128) * hit.what->material.ks;
 //        }
 //        // multiply by how transparent it is
 //        colour = colour + hit_colour * ka * (1 - hit.what->material.t);
@@ -180,44 +168,51 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 }
 
 
-Vector Scene::approximate_indirect(Ray &ray, Hit &hit) {
+Vector Scene::approximate_emmissive(Ray &ray, Hit &hit) {
     Vector indirect_diffuse = Vector();
-    vector<Photon> local_photons = gather_photons(hit.position, 100);
+    vector<Photon> local_photons = gather_photons(hit.position, 200);
     float max_dist = -1;
     //calculate distance first
     for (Photon p: local_photons) {
-//        if(p.type != photon_type::indirect) continue;
+        if (p.type != photon_type::direct) continue;
         float dist = (p.ray.position - hit.position).magnitude();
         if (dist > max_dist) max_dist = dist;
     }
 
     for (Photon p: local_photons) {
-//        if (p.type != photon_type::indirect) continue;
-        Vector view = ray.direction;
-        Vector dir = p.ray.direction;
-        view.normalise();
-        dir.normalise();
-        view.negate();
-        view.normalise();
-        float dot = p.ray.direction.dot(view);
-        if (dot <= 0) continue;
+        if (p.type != photon_type::direct) continue;
 
-        indirect_diffuse = indirect_diffuse + p.colour * dot;
+        indirect_diffuse = indirect_diffuse + p.colour;
     }
 
     Vector colour = indirect_diffuse / (M_PI * max_dist * max_dist);
     return colour;
 }
 
-float Scene::compute_specular_component(Ray &ray, Hit &hit, Vector &direction) const {
-    Vector reflection = Vector();
-    hit.normal.reflection(direction, reflection);
-    float specular = reflection.dot(ray.direction);
-    // thus no contribution
-    if (specular < 0) {
-        specular = 0.0;
+Vector Scene::approximate_indirect(Ray &ray, Hit &hit) {
+    Vector indirect_diffuse = Vector();
+    vector<Photon> local_photons = gather_photons(hit.position, 750);
+    float max_dist = -1;
+    //calculate distance first
+    for (Photon p: local_photons) {
+        if (p.type != photon_type::indirect) continue;
+        float dist = (p.ray.position - hit.position).magnitude();
+        if (dist > max_dist) max_dist = dist;
     }
-    return specular;
+
+    for (Photon p: local_photons) {
+        if (p.type != photon_type::indirect) continue;
+        float diffuse = p.ray.direction.dot(hit.normal);
+        //thus self occlusion
+        if (diffuse < 0) {
+            continue;
+        }
+
+        indirect_diffuse = indirect_diffuse + p.colour * diffuse;
+    }
+
+    Vector colour = indirect_diffuse / (M_PI * max_dist * max_dist);
+    return colour;
 }
 
 bool Scene::object_occluded(vector<Object *> &objects, Vertex &hit_position, Vertex &light_position) {
@@ -305,7 +300,7 @@ void Scene::emit_photons(int n) {
     for (Light *light : lights) {
         for (int i = 0; i < n; i++) {
             // TODO improve this for other lights
-            Vector direction = get_random_direction(Vector(-1, 0, 0));
+            Vector direction = get_random_direction();
             Ray ray = Ray(light->position, direction);
             Photon photon = Photon(ray, direction, photon_type::direct);
             trace_photon(photon, 10, true);
@@ -334,10 +329,17 @@ void Scene::trace_photon(Photon photon, int depth, bool first_intersection) {
         }
 
         photon.ray.position = hit.position;
-//        if (first_intersection) {
         if (photon.type == photon_type::direct) {
             photon.colour = hit.what->material.colour;
+
+//            photons.push_back(photon);
+//            tags.push_back(points.size() / 3);
+//            points.push_back(photon.ray.position.x);
+//            points.push_back(photon.ray.position.y);
+//            points.push_back(photon.ray.position.z);
         }
+
+
 
 
         // Russian Roulette

@@ -38,8 +38,6 @@ public:
 
     Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i);
 
-    float compute_specular_component(Ray &ray, Hit &hit, Vector &direction) const;
-
     Vector get_random_direction(Vector normal);
 
     float get_random_number(int min, int max);
@@ -63,5 +61,7 @@ public:
     float BRDF(Hit hit, Vector incoming, Vector view);
 
     Vector get_random_direction();
+
+    Vector approximate_emmissive(Ray &ray, Hit &hit);
 };
 #endif //CODE_SCENE_H
