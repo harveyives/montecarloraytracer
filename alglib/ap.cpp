@@ -157,6 +157,8 @@ This is internal structure which implements lock functionality.
     } _lock;
 
 
+
+
 /*
  * Error tracking facilities; this fields are modified every time ae_set_error_flag()
  * is called with non-zero cond. Thread unsafe access, but it does not matter actually.
@@ -2488,7 +2490,6 @@ Symmetric/Hermitian properties: check and force
             return w * sqrt(1 + t * t);
         }
     }
-
 /*
  * this function checks difference between offdiagonal blocks BL and BU
  * (see below). Block BL is specified by offsets (offset0,offset1)  and
@@ -2547,7 +2548,6 @@ Symmetric/Hermitian properties: check and force
             }
         }
     }
-
 /*
  * this function checks that diagonal block A0 is symmetric.
  * Block A0 is specified by its offset and size.
@@ -2600,7 +2600,6 @@ Symmetric/Hermitian properties: check and force
             *mx = *mx > v ? *mx : v;
         }
     }
-
 /*
  * this function checks difference between offdiagonal blocks BL and BU
  * (see below). Block BL is specified by offsets (offset0,offset1)  and
@@ -2660,7 +2659,6 @@ Symmetric/Hermitian properties: check and force
             }
         }
     }
-
 /*
  * this function checks that diagonal block A0 is Hermitian.
  * Block A0 is specified by its offset and size.
@@ -2720,7 +2718,6 @@ Symmetric/Hermitian properties: check and force
             }
         }
     }
-
 /*
  * this function copies offdiagonal block BL to its symmetric counterpart
  * BU (see below). Block BL is specified by offsets (offset0,offset1)
@@ -2765,7 +2762,6 @@ Symmetric/Hermitian properties: check and force
             }
         }
     }
-
 /*
  * this function copies lower part of diagonal block A0 to its upper part
  * Block is specified by offset and size.
@@ -2799,7 +2795,6 @@ Symmetric/Hermitian properties: check and force
                 *pcol = *prow;
         }
     }
-
 /*
  * this function copies Hermitian transpose of offdiagonal block BL to
  * its symmetric counterpart BU (see below). Block BL is specified by
@@ -2843,7 +2838,6 @@ Symmetric/Hermitian properties: check and force
             }
         }
     }
-
 /*
  * this function copies Hermitian transpose of lower part of
  * diagonal block A0 to its upper part Block is specified by offset and size.
@@ -4078,6 +4072,7 @@ state               ALGLIB environment state
     }
 
 
+
 /************************************************************************
 This function clears internal list of recycled objects and  seed  object.
 However, pool still can be used (after initialization with another seed).
@@ -4218,7 +4213,6 @@ the data being stored can be a few characters smaller than requested.
         serializer->stream_reader = cpp_reader;
         serializer->stream_aux = reinterpret_cast<ae_int_t>(stream);
     }
-
 #endif
 
     void ae_serializer_sstart_str(ae_serializer *serializer, char *buf) {
@@ -5331,11 +5325,8 @@ Internal forwards
 ********************************************************************/
 namespace alglib {
     double get_aenv_nan();
-
     double get_aenv_posinf();
-
     double get_aenv_neginf();
-
     ae_int_t my_stricmp(const char *s1, const char *s2);
 
     char *filter_spaces(const char *s);
@@ -5345,21 +5336,14 @@ namespace alglib {
     void str_matrix_create(const char *src, std::vector<std::vector<const char *> > *p_mat);
 
     ae_bool parse_bool_delim(const char *s, const char *delim);
-
     ae_int_t parse_int_delim(const char *s, const char *delim);
-
     bool _parse_real_delim(const char *s, const char *delim, double *result, const char **new_s);
-
     double parse_real_delim(const char *s, const char *delim);
-
     alglib::complex parse_complex_delim(const char *s, const char *delim);
 
     std::string arraytostring(const bool *ptr, ae_int_t n);
-
     std::string arraytostring(const ae_int_t *ptr, ae_int_t n);
-
     std::string arraytostring(const double *ptr, ae_int_t n, int dps);
-
     std::string arraytostring(const alglib::complex *ptr, ae_int_t n, int dps);
 }
 
@@ -5406,7 +5390,6 @@ void alglib::ap_error::make_assertion(bool bClause, const char *p_msg) {
     if (!bClause)
         _ALGLIB_CPP_EXCEPTION(p_msg);
 }
-
 #else
                                                                                                                         void alglib::set_error_flag(const char *s)
 {
@@ -5563,7 +5546,6 @@ std::string alglib::complex::tostring(int _dps) const {
         return std::string(y > 0 ? "" : "-") + buf_y + "i";
     return std::string("0");
 }
-
 #endif
 
 bool alglib::operator==(const alglib::complex &lhs, const alglib::complex &rhs) {
@@ -6603,7 +6585,6 @@ alglib::ae_vector_wrapper::ae_vector_wrapper(const char *s, alglib_impl::ae_data
         throw;
     }
 }
-
 #endif
 
 alglib::boolean_1d_array::boolean_1d_array() : ae_vector_wrapper(alglib_impl::DT_BOOL) {
@@ -6670,7 +6651,6 @@ std::string alglib::boolean_1d_array::tostring() const {
         return "[]";
     return arraytostring(&(operator()(0)), length());
 }
-
 #endif
 
 alglib::integer_1d_array::integer_1d_array() : ae_vector_wrapper(alglib_impl::DT_INT) {
@@ -6737,7 +6717,6 @@ std::string alglib::integer_1d_array::tostring() const {
         return "[]";
     return arraytostring(&operator()(0), length());
 }
-
 #endif
 
 alglib::real_1d_array::real_1d_array() : ae_vector_wrapper(alglib_impl::DT_REAL) {
@@ -6832,7 +6811,6 @@ std::string alglib::real_1d_array::tostring(int dps) const {
         return "[]";
     return arraytostring(&operator()(0), length(), dps);
 }
-
 #endif
 
 alglib::complex_1d_array::complex_1d_array() : ae_vector_wrapper(alglib_impl::DT_COMPLEX) {
@@ -6901,7 +6879,6 @@ std::string alglib::complex_1d_array::tostring(int dps) const {
         return "[]";
     return arraytostring(&operator()(0), length(), dps);
 }
-
 #endif
 
 alglib::ae_matrix_wrapper::ae_matrix_wrapper(alglib_impl::ae_matrix *e_ptr, alglib_impl::ae_datatype datatype) {
@@ -7023,7 +7000,6 @@ alglib::ae_matrix_wrapper::ae_matrix_wrapper(const char *s, alglib_impl::ae_data
         throw;
     }
 }
-
 #endif
 
 void alglib::ae_matrix_wrapper::setlength(ae_int_t rows, ae_int_t cols) // TODO: automatic allocation of NULL ptr!!!!!
@@ -7185,7 +7161,6 @@ std::string alglib::boolean_2d_array::tostring() const {
     result += "]";
     return result;
 }
-
 #endif
 
 alglib::integer_2d_array::integer_2d_array() : ae_matrix_wrapper(alglib_impl::DT_INT) {
@@ -7254,7 +7229,6 @@ std::string alglib::integer_2d_array::tostring() const {
     result += "]";
     return result;
 }
-
 #endif
 
 alglib::real_2d_array::real_2d_array() : ae_matrix_wrapper(alglib_impl::DT_REAL) {
@@ -7351,7 +7325,6 @@ std::string alglib::real_2d_array::tostring(int dps) const {
     result += "]";
     return result;
 }
-
 #endif
 
 alglib::complex_2d_array::complex_2d_array() : ae_matrix_wrapper(alglib_impl::DT_COMPLEX) {
@@ -7422,7 +7395,6 @@ std::string alglib::complex_2d_array::tostring(int dps) const {
     result += "]";
     return result;
 }
-
 #endif
 
 /********************************************************************
@@ -7490,7 +7462,6 @@ alglib::ae_int_t alglib::my_stricmp(const char *s1, const char *s2) {
 }
 
 #if !defined(AE_NO_EXCEPTIONS)
-
 //
 // This function filters out all spaces from the string.
 // It returns string allocated with ae_malloc().
@@ -7839,7 +7810,6 @@ std::string alglib::arraytostring(const alglib::complex *ptr, ae_int_t n, int dp
     result += "]";
     return result;
 }
-
 #endif
 
 
@@ -8077,7 +8047,6 @@ void alglib::read_csv(const char *filename, char separator, int flags, alglib::r
             out[ridx - row0][cidx] = atof(p_field);
         }
 }
-
 #endif
 
 
@@ -10406,6 +10375,8 @@ Interface functions for efficient kernels
         return _ialglib_rmatrixger(m, n, &a->ptr.pp_double[ia][ja], a->stride, alpha, &u->ptr.p_double[uoffs],
                                    &v->ptr.p_double[voffs]);
     }
+
+
 
 
 /********************************************************************

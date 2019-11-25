@@ -19,7 +19,6 @@ http://www.fsf.org/licensing/licenses
 *************************************************************************/
 #ifndef _alglibinternal_pkg_h
 #define _alglibinternal_pkg_h
-
 #include "ap.h"
 
 
@@ -209,7 +208,6 @@ namespace alglib_impl {
     ae_int_t getidwserializationcode(ae_state *_state);
 
     ae_int_t getknnserializationcode(ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_APSERV) || !defined(AE_PARTIAL_BUILD)
 
@@ -637,7 +635,6 @@ namespace alglib_impl {
     void _scomplexarray_clear(void *_p);
 
     void _scomplexarray_destroy(void *_p);
-
 #endif
 #if defined(AE_COMPILE_TSORT) || !defined(AE_PARTIAL_BUILD)
 
@@ -712,7 +709,6 @@ namespace alglib_impl {
                                       ae_int_t n,
                                       double t,
                                       ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_ABLASMKL) || !defined(AE_PARTIAL_BUILD)
 
@@ -1059,7 +1055,6 @@ namespace alglib_impl {
             /* Real    */ ae_vector *y,
                              ae_int_t iy,
                              ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_ABLASF) || !defined(AE_PARTIAL_BUILD)
 
@@ -1312,7 +1307,6 @@ namespace alglib_impl {
                            ae_int_t ic,
                            ae_int_t jc,
                            ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_CREFLECTIONS) || !defined(AE_PARTIAL_BUILD)
 
@@ -1340,7 +1334,6 @@ namespace alglib_impl {
                                                           ae_int_t n2,
             /* Complex */ ae_vector *work,
                                                           ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_ROTATIONS) || !defined(AE_PARTIAL_BUILD)
 
@@ -1372,7 +1365,6 @@ namespace alglib_impl {
                           double *sn,
                           double *r,
                           ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_TRLINSOLVE) || !defined(AE_PARTIAL_BUILD)
 
@@ -1395,7 +1387,6 @@ namespace alglib_impl {
                                            ae_bool normin,
             /* Real    */ ae_vector *cnorm,
                                            ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_SAFESOLVE) || !defined(AE_PARTIAL_BUILD)
 
@@ -1418,7 +1409,6 @@ namespace alglib_impl {
                                                    ae_bool isunit,
                                                    double maxgrowth,
                                                    ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_HBLAS) || !defined(AE_PARTIAL_BUILD)
 
@@ -1440,7 +1430,6 @@ namespace alglib_impl {
             /* Complex */ ae_vector *t,
                                             ae_complex alpha,
                                             ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_SBLAS) || !defined(AE_PARTIAL_BUILD)
 
@@ -1462,7 +1451,6 @@ namespace alglib_impl {
             /* Real    */ ae_vector *t,
                                             double alpha,
                                             ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_BLAS) || !defined(AE_PARTIAL_BUILD)
 
@@ -1567,7 +1555,6 @@ namespace alglib_impl {
                                             double beta,
             /* Real    */ ae_vector *work,
                                             ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_LINMIN) || !defined(AE_PARTIAL_BUILD)
 
@@ -1624,7 +1611,6 @@ namespace alglib_impl {
     void _armijostate_clear(void *_p);
 
     void _armijostate_destroy(void *_p);
-
 #endif
 #if defined(AE_COMPILE_XBLAS) || !defined(AE_PARTIAL_BUILD)
 
@@ -1643,7 +1629,6 @@ namespace alglib_impl {
                              ae_complex *r,
                              double *rerr,
                              ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_BASICSTATOPS) || !defined(AE_PARTIAL_BUILD)
 
@@ -1657,7 +1642,6 @@ namespace alglib_impl {
                                    ae_int_t n,
                                    apbuffers *buf,
                                    ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_HPCCORES) || !defined(AE_PARTIAL_BUILD)
 
@@ -1704,7 +1688,6 @@ namespace alglib_impl {
     void _mlpbuffers_clear(void *_p);
 
     void _mlpbuffers_destroy(void *_p);
-
 #endif
 #if defined(AE_COMPILE_NTHEORY) || !defined(AE_PARTIAL_BUILD)
 
@@ -1712,7 +1695,6 @@ namespace alglib_impl {
                                      ae_int_t *proot,
                                      ae_int_t *invproot,
                                      ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_FTBASE) || !defined(AE_PARTIAL_BUILD)
 
@@ -1748,7 +1730,6 @@ namespace alglib_impl {
     void _fasttransformplan_clear(void *_p);
 
     void _fasttransformplan_destroy(void *_p);
-
 #endif
 #if defined(AE_COMPILE_NEARUNITYUNIT) || !defined(AE_PARTIAL_BUILD)
 
@@ -1757,7 +1738,6 @@ namespace alglib_impl {
     double nuexpm1(double x, ae_state *_state);
 
     double nucosm1(double x, ae_state *_state);
-
 #endif
 #if defined(AE_COMPILE_ALGLIBBASICS) || !defined(AE_PARTIAL_BUILD)
 #endif

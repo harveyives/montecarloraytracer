@@ -19,7 +19,6 @@ http://www.fsf.org/licensing/licenses
 *************************************************************************/
 #ifndef _alglibmisc_pkg_h
 #define _alglibmisc_pkg_h
-
 #include "ap.h"
 #include "alglibinternal.h"
 
@@ -86,7 +85,6 @@ namespace alglib_impl {
 namespace alglib {
 
 #if defined(AE_COMPILE_NEARESTNEIGHBOR) || !defined(AE_PARTIAL_BUILD)
-
 /*************************************************************************
 Buffer object which is used to perform nearest neighbor  requests  in  the
 multithreaded mode (multiple threads working with same KD-tree object).
@@ -156,11 +154,9 @@ KD-tree object.
         virtual ~kdtree();
 
     };
-
 #endif
 
 #if defined(AE_COMPILE_HQRND) || !defined(AE_PARTIAL_BUILD)
-
 /*************************************************************************
 Portable high quality random number generator state.
 Initialized with HQRNDRandomize() or HQRNDSeed().
@@ -200,11 +196,9 @@ Fields:
         virtual ~hqrndstate();
 
     };
-
 #endif
 
 #if defined(AE_COMPILE_XDEBUG) || !defined(AE_PARTIAL_BUILD)
-
 /*************************************************************************
 
 *************************************************************************/
@@ -241,11 +235,9 @@ Fields:
         real_1d_array a;
 
     };
-
 #endif
 
 #if defined(AE_COMPILE_NEARESTNEIGHBOR) || !defined(AE_PARTIAL_BUILD)
-
 /*************************************************************************
 This function serializes data structure to string.
 
@@ -273,6 +265,8 @@ Important properties of s_out:
 This function unserializes data structure from string.
 *************************************************************************/
     void kdtreeunserialize(const std::string &s_in, kdtree &obj);
+
+
 
 
 /*************************************************************************
@@ -1251,11 +1245,9 @@ when you call it from command line.
      Copyright 28.02.2010 by Bochkanov Sergey
 *************************************************************************/
     void kdtreequeryresultsdistancesi(const kdtree &kdt, real_1d_array &r, const xparams _xparams = alglib::xdefault);
-
 #endif
 
 #if defined(AE_COMPILE_HQRND) || !defined(AE_PARTIAL_BUILD)
-
 /*************************************************************************
 HQRNDState  initialization  with  random  values  which come from standard
 RNG.
@@ -1393,11 +1385,9 @@ RESULT
 *************************************************************************/
     double hqrndcontinuous(const hqrndstate &state, const real_1d_array &x, const ae_int_t n,
                            const xparams _xparams = alglib::xdefault);
-
 #endif
 
 #if defined(AE_COMPILE_XDEBUG) || !defined(AE_PARTIAL_BUILD)
-
 /*************************************************************************
 This is debug function intended for testing ALGLIB interface generator.
 Never use it in any real life project.
@@ -1842,7 +1832,6 @@ Returns sum of a[i,j]*(1+b[i,j]) such that c[i,j] is True
     double
     xdebugmaskedbiasedproductsum(const ae_int_t m, const ae_int_t n, const real_2d_array &a, const real_2d_array &b,
                                  const boolean_2d_array &c, const xparams _xparams = alglib::xdefault);
-
 #endif
 }
 
@@ -2037,7 +2026,6 @@ namespace alglib_impl {
     void _kdtree_clear(void *_p);
 
     void _kdtree_destroy(void *_p);
-
 #endif
 #if defined(AE_COMPILE_HQRND) || !defined(AE_PARTIAL_BUILD)
 
@@ -2082,7 +2070,6 @@ namespace alglib_impl {
     void _hqrndstate_clear(void *_p);
 
     void _hqrndstate_destroy(void *_p);
-
 #endif
 #if defined(AE_COMPILE_XDEBUG) || !defined(AE_PARTIAL_BUILD)
 
@@ -2186,7 +2173,6 @@ namespace alglib_impl {
     void _xdebugrecord1_clear(void *_p);
 
     void _xdebugrecord1_destroy(void *_p);
-
 #endif
 
 }

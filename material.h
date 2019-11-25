@@ -27,7 +27,7 @@ public:
         t = transparent;
     }
 
-    Vector compute_colour(Vector view, Vector &light_direction, Vector &normal, Vector base_colour) {
+    Vector compute_colour(Vector &view, Vector &light_direction, Vector &normal, Vector base_colour) {
         Vector result = Vector();
 
         // diffuse

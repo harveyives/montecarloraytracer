@@ -26,7 +26,7 @@ public:
     vector<long> tags;
     kdtree kdt;
 
-    Scene(float ambient = 1);
+    Scene(float ambient, bool generate_photon_map);
 
     Hit check_intersections(Ray &ray, Hit &hit);
 
@@ -44,9 +44,9 @@ public:
 
     Vector sample(Vertex query, int k);
 
-    void trace_photon(Photon photon, int depth, bool first_intersection);
+    void trace_photon(Photon photon, int depth);
 
-    void emit_photons(int n);
+    void emit_photons(int n, int depth);
 
     Photon get_nearest_photon(Vertex query);
 
@@ -63,5 +63,7 @@ public:
     Vector get_random_direction();
 
     Vector approximate_emmissive(Ray &ray, Hit &hit);
+
+    vector<string> split_string(string line);
 };
 #endif //CODE_SCENE_H

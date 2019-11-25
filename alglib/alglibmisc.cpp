@@ -20,7 +20,6 @@ http://www.fsf.org/licensing/licenses
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
 #endif
-
 #include "stdafx.h"
 #include "alglibmisc.h"
 
@@ -53,7 +52,6 @@ namespace alglib {
 #endif
 
 #if defined(AE_COMPILE_NEARESTNEIGHBOR) || !defined(AE_PARTIAL_BUILD)
-
 /*************************************************************************
 Buffer object which is used to perform nearest neighbor  requests  in  the
 multithreaded mode (multiple threads working with same KD-tree object).
@@ -348,7 +346,6 @@ Important properties of s_out:
         alglib_impl::ae_serializer_clear(&serializer);
         alglib_impl::ae_state_clear(&state);
     }
-
 /*************************************************************************
 This function unserializes data structure from string.
 *************************************************************************/
@@ -412,7 +409,6 @@ out more about serialization of AlGLIB objects.
         alglib_impl::ae_serializer_clear(&serializer);
         alglib_impl::ae_state_clear(&state);
     }
-
 /*************************************************************************
 This function unserializes data structure from stream.
 *************************************************************************/
@@ -553,7 +549,6 @@ NOTES
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return;
     }
-
 #endif
 
 /*************************************************************************
@@ -677,7 +672,6 @@ NOTES
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return;
     }
-
 #endif
 
 /*************************************************************************
@@ -841,7 +835,6 @@ these results:
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return *(reinterpret_cast<ae_int_t *>(&result));
     }
-
 #endif
 
 /*************************************************************************
@@ -975,7 +968,6 @@ IMPORTANT: kd-tree buffer should be used only with  KD-tree  object  which
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return *(reinterpret_cast<ae_int_t *>(&result));
     }
-
 #endif
 
 /*************************************************************************
@@ -1100,7 +1092,6 @@ actual results:
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return *(reinterpret_cast<ae_int_t *>(&result));
     }
-
 #endif
 
 /*************************************************************************
@@ -1223,7 +1214,6 @@ As indicated by "U" suffix, this function returns unordered results.
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return *(reinterpret_cast<ae_int_t *>(&result));
     }
-
 #endif
 
 /*************************************************************************
@@ -1365,7 +1355,6 @@ IMPORTANT: kd-tree buffer should be used only with  KD-tree  object  which
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return *(reinterpret_cast<ae_int_t *>(&result));
     }
-
 #endif
 
 /*************************************************************************
@@ -1507,7 +1496,6 @@ IMPORTANT: kd-tree buffer should be used only with  KD-tree  object  which
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return *(reinterpret_cast<ae_int_t *>(&result));
     }
-
 #endif
 
 /*************************************************************************
@@ -1638,7 +1626,6 @@ these results:
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return *(reinterpret_cast<ae_int_t *>(&result));
     }
-
 #endif
 
 /*************************************************************************
@@ -1786,7 +1773,6 @@ IMPORTANT: kd-tree buffer should be used only with  KD-tree  object  which
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return *(reinterpret_cast<ae_int_t *>(&result));
     }
-
 #endif
 
 /*************************************************************************
@@ -2493,11 +2479,9 @@ when you call it from command line.
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return;
     }
-
 #endif
 
 #if defined(AE_COMPILE_HQRND) || !defined(AE_PARTIAL_BUILD)
-
 /*************************************************************************
 Portable high quality random number generator state.
 Initialized with HQRNDRandomize() or HQRNDSeed().
@@ -2938,11 +2922,9 @@ RESULT
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return *(reinterpret_cast<double *>(&result));
     }
-
 #endif
 
 #if defined(AE_COMPILE_XDEBUG) || !defined(AE_PARTIAL_BUILD)
-
 /*************************************************************************
 
 *************************************************************************/
@@ -4092,7 +4074,6 @@ Returns sum of a[i,j]*(1+b[i,j]) such that c[i,j] is True
         alglib_impl::ae_state_clear(&_alglib_env_state);
         return *(reinterpret_cast<double *>(&result));
     }
-
 #endif
 }
 

@@ -2,7 +2,6 @@
 #include "vertex.h"
 #include "camera.h"
 #include "sphere.h"
-#include "framebuffer.h"
 #include <math.h>
 #include <string>
 #include <iostream>
@@ -11,15 +10,23 @@
 #include "scene.h"
 #include "alglib/stdafx.h"
 #include "alglib/alglibmisc.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <map>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
+#include <math.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <iterator>
+#include <float.h>
+#include <vector>
+#include <algorithm>
+#include "vector.h"
 
 using namespace alglib;
 
-Scene::Scene(float ambient) {
+Scene::Scene(float ambient, bool generate_photon_map) {
     ka = ambient;
     // Adding objects:
 
@@ -41,14 +48,14 @@ Scene::Scene(float ambient) {
 
     // Spheres
     Sphere *sphere = new Sphere(Vertex(-5, 0, 50), 12, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 1));
-    Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, Material({255, 255, 255}, 0.0, 0.4));
+    Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, Material({255, 255, 255}, 0.6, 0.4));
     Sphere *sphere3 = new Sphere(Vertex(4, 4, 15), 1, Material({0, 0, 255}, 0.4, 0.6, 2, 1, 0));
     Sphere *sphere4 = new Sphere(Vertex(12, 8, 35), 12, Material({255, 0, 0}, 0, 0.4, 1));
 
     // Cornell Box
-    Material wall = Material({255, 255, 255}, 0.0, 0.8, 1);
-    Material red_wall = Material({255, 0, 0}, 0.0, 0.8, 1);
-    Material green_wall = Material({0, 255, 0}, 0.0, 0.8, 1);
+    Material wall = Material({255, 255, 255}, 0.0, 0.6, 1);
+    Material red_wall = Material({255, 0, 0}, 0.0, 0.6, 1);
+    Material green_wall = Material({0, 255, 0}, 0.0, 0.6, 1);
     Plane *top = new Plane(Vertex(0, 15, 0), Vector(0, -1, 0), wall);
     Plane *bottom = new Plane(Vertex(0, -15, 0), Vector(0, 1, 0), wall);
     Plane *left = new Plane(Vertex(-15, 0, 0), Vector(1, 0, 0), red_wall);
@@ -80,18 +87,78 @@ Scene::Scene(float ambient) {
     // Adding to list
     lights.push_back(l1);
 //        lights.push_back(l3);
+    // TODO cleanup
+    if (generate_photon_map) {
+        cout << "Generating new photon map...\n";
+        emit_photons(200000, 20);
+        real_2d_array matrix;
+        matrix.attach_to_ptr(points.size() / 3, 3, points.data());
+        ae_int_t nx = 3;
+        ae_int_t ny = 0;
+        ae_int_t normtype = 2;
+        real_1d_array x;
+        integer_1d_array input;
+        input.setcontent(points.size() / 3, tags.data());
+        kdtreebuildtagged(matrix, input, nx, ny, normtype, kdt);
+        cout << "Writing to file...\n";
+        std::stringstream ss;
+        kdtreeserialize(kdt, ss);
+        std::ofstream outFile;
+        outFile.open("kdtree", ios::out);
+        outFile << ss.str();
+        outFile.close();
 
-    emit_photons(200000);
-    cout << "I'm running the scene\n";
-    real_2d_array a;
-    a.attach_to_ptr(points.size() / 3, 3, points.data());
-    ae_int_t nx = 3;
-    ae_int_t ny = 0;
-    ae_int_t normtype = 2;
-    real_1d_array x;
-    integer_1d_array input;
-    input.setcontent(points.size() / 3, tags.data());
-    kdtreebuildtagged(a, input, nx, ny, normtype, kdt);
+        std::ifstream file("kdtree");
+        std::stringstream buffer;
+
+        buffer << file.rdbuf();
+
+        file.close();
+        kdtreeunserialize(buffer, kdt);
+
+        ofstream ofs("photons", ios::out);
+
+        for (size_t i = 0; i < photons.size(); i++) {
+            ofs << photons[i].colour.x << "\t" << photons[i].colour.y << "\t" << photons[i].colour.z << "\t"
+                << photons[i].ray.direction.x << "\t" << photons[i].ray.direction.y << "\t"
+                << photons[i].ray.direction.z << "\t"
+                << photons[i].ray.position.x << "\t" << photons[i].ray.position.y << "\t" << photons[i].ray.position.z
+                << "\t"
+                << photons[i].type << "\r\n";
+        }
+        cout << "Done writing to file." << endl;
+    } else {
+        cout << "Loading pre-built map...\n";
+        std::ifstream file("kdtree");
+        std::stringstream buffer;
+
+        buffer << file.rdbuf();
+
+        file.close();
+        kdtreeunserialize(buffer, kdt);
+
+        ifstream ifs("photons", ios::in);
+
+        string line;
+        while (getline(ifs, line)) {
+            vector<string> photon_line = split_string(line);
+            Vector colour = Vector(stoi(photon_line[0]), stoi(photon_line[1]), stoi(photon_line[2]));
+            Vector direction = Vector(stof(photon_line[3]), stof(photon_line[4]), stof(photon_line[5]));
+            Vertex position = Vertex(stof(photon_line[6]), stof(photon_line[7]), stof(photon_line[8]));
+            string type = photon_line[9];
+            Photon photon = Photon(Ray(position, direction), colour, type);
+            photons.push_back(photon);
+        }
+        cout << "Done loading map." << endl;
+    }
+}
+
+//TODO move this to utils
+vector<string> Scene::split_string(string line) {
+    istringstream ss(line);
+    istream_iterator<string> begin(ss), end;
+    vector<string> words(begin, end);
+    return words;
 }
 
 Hit Scene::check_intersections(Ray &ray, Hit &hit) {
@@ -170,47 +237,65 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 
 Vector Scene::approximate_emmissive(Ray &ray, Hit &hit) {
     Vector indirect_diffuse = Vector();
-    vector<Photon> local_photons = gather_photons(hit.position, 200);
+    vector<Photon> local_photons = gather_photons(hit.position, 800);
     float max_dist = -1;
     //calculate distance first
     for (Photon p: local_photons) {
-        if (p.type != photon_type::direct) continue;
+        if (p.type != "direct") continue;
         float dist = (p.ray.position - hit.position).magnitude();
         if (dist > max_dist) max_dist = dist;
     }
 
     for (Photon p: local_photons) {
-        if (p.type != photon_type::direct) continue;
+        if (p.type != "direct") continue;
 
-        indirect_diffuse = indirect_diffuse + p.colour;
+        float alpha = 0.918;
+        float beta = 1.953;
+        float dist = (p.ray.position - hit.position).magnitude();
+        float gaussian = alpha * (1 - (1 - exp(-beta * (dist * dist) / (2 * max_dist * max_dist))) / (1 - exp(-beta)));
+
+        indirect_diffuse = indirect_diffuse + p.colour * gaussian;
     }
 
-    Vector colour = indirect_diffuse / (M_PI * max_dist * max_dist);
+    Vector colour = indirect_diffuse;
     return colour;
 }
 
 Vector Scene::approximate_indirect(Ray &ray, Hit &hit) {
     Vector indirect_diffuse = Vector();
-    vector<Photon> local_photons = gather_photons(hit.position, 750);
+    vector<Photon> local_photons = gather_photons(hit.position, 500);
     float max_dist = -1;
     //calculate distance first
     for (Photon p: local_photons) {
-        if (p.type != photon_type::indirect) continue;
+//        if (p.type != photon_type::indirect) continue;
         float dist = (p.ray.position - hit.position).magnitude();
         if (dist > max_dist) max_dist = dist;
     }
 
     for (Photon p: local_photons) {
-        if (p.type != photon_type::indirect) continue;
-        float diffuse = p.ray.direction.dot(hit.normal);
+//        if (p.type != photon_type::indirect) continue;
+
+
+        float alpha = 0.918;
+        float beta = 1.953;
+        float dist = (p.ray.position - hit.position).magnitude();
+        float gaussian =
+                alpha * (1 - (1 - exp(-beta * ((dist * dist) / (2 * max_dist * max_dist)))) / (1 - exp(-beta)));
+
+
+        Vector v = p.ray.direction;
+        v.negate();
+        float diffuse = v.dot(hit.normal);
         //thus self occlusion
         if (diffuse < 0) {
             continue;
         }
 
-        indirect_diffuse = indirect_diffuse + p.colour * diffuse;
+        indirect_diffuse = indirect_diffuse +
+                           hit.what->material.compute_colour(ray.direction, v, hit.normal, p.colour);// * gaussian;
     }
 
+//    Vector colour = indirect_diffuse;
     Vector colour = indirect_diffuse / (M_PI * max_dist * max_dist);
     return colour;
 }
@@ -295,15 +380,15 @@ Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index
     return refracted_ray;
 }
 
-void Scene::emit_photons(int n) {
+void Scene::emit_photons(int n, int depth) {
     cout << "Mapping photons..." << endl;
     for (Light *light : lights) {
         for (int i = 0; i < n; i++) {
             // TODO improve this for other lights
             Vector direction = get_random_direction();
             Ray ray = Ray(light->position, direction);
-            Photon photon = Photon(ray, direction, photon_type::direct);
-            trace_photon(photon, 10, true);
+            Photon photon = Photon(ray, direction, "direct");
+            trace_photon(photon, depth);
         }
         // scale by number of photons from light
         for (Photon p: photons) {
@@ -313,12 +398,17 @@ void Scene::emit_photons(int n) {
     cout << "Mapping complete." << endl;
 }
 
-void Scene::trace_photon(Photon photon, int depth, bool first_intersection) {
+void Scene::trace_photon(Photon photon, int depth) {
     if (depth <= 0) return;
 
     Hit hit = Hit();
     check_intersections(photon.ray, hit);
     if (hit.flag) {
+        photon.ray.position = hit.position;
+        if (photon.type == "direct") {
+            photon.colour = hit.what->material.colour;
+        }
+
         Material m = hit.what->material;
         if (m.ks == 0) {
             photons.push_back(photon);
@@ -328,34 +418,19 @@ void Scene::trace_photon(Photon photon, int depth, bool first_intersection) {
             points.push_back(photon.ray.position.z);
         }
 
-        photon.ray.position = hit.position;
-        if (photon.type == photon_type::direct) {
-            photon.colour = hit.what->material.colour;
-
-//            photons.push_back(photon);
-//            tags.push_back(points.size() / 3);
-//            points.push_back(photon.ray.position.x);
-//            points.push_back(photon.ray.position.y);
-//            points.push_back(photon.ray.position.z);
-        }
-
-
-
-
         // Russian Roulette
         float p = get_random_number(0, 1);
         if (p <= m.kd) {
             //diffuse
             photon.ray.direction = get_random_direction(hit.normal);
-            float dot = photon.ray.direction.dot(hit.normal);
-            photon.colour = photon.colour;// * m.kd;
-            photon.type = photon_type::indirect;
-            trace_photon(photon, depth - 1, false);
+            photon.colour = photon.colour;
+            photon.type = "indirect";
+            trace_photon(photon, depth - 1);
         } else if (p <= m.kd + m.ks) {
             hit.normal.reflection(photon.ray.direction, photon.ray.direction);
-            photon.colour = photon.colour;// * m.ks;
-            photon.type = photon_type::indirect;
-            trace_photon(photon, depth - 1, false);
+            photon.colour = photon.colour;
+            photon.type = "indirect";
+            trace_photon(photon, depth - 1);
         } else {
             return;
         }
@@ -392,21 +467,21 @@ vector<Photon> Scene::gather_photons(Vertex query, int k) {
 }
 
 photon_type Scene::get_majority_type(Vertex query) {
-    vector<Photon> gathered_photons = gather_photons(query, 10);
-    map<photon_type, int> map;
-    map.insert(make_pair(photon_type::direct, 0));
-    map.insert(make_pair(photon_type::indirect, 0));
-    map.insert(make_pair(photon_type::shadow, 0));
-    map.insert(make_pair(photon_type::caustic, 0));
-    for (Photon p: gathered_photons) {
-        map[p.type]++;
-    }
-
-    auto max = max_element(map.begin(), map.end(),
-                           [](const pair<photon_type, int> &a, const pair<photon_type, int> &b) {
-                               return a.second < b.second;
-                           });
-    return max->first;
+//    vector<Photon> gathered_photons = gather_photons(query, 10);
+//    map<photon_type, int> map;
+//    map.insert(make_pair(photon_type::direct, 0));
+//    map.insert(make_pair(photon_type::indirect, 0));
+//    map.insert(make_pair(photon_type::shadow, 0));
+//    map.insert(make_pair(photon_type::caustic, 0));
+//    for (Photon p: gathered_photons) {
+//        map[p.type]++;
+//    }
+//
+//    auto max = max_element(map.begin(), map.end(),
+//                           [](const pair<photon_type, int> &a, const pair<photon_type, int> &b) {
+//                               return a.second < b.second;
+//                           });
+//    return max->first;
 }
 
 Vector Scene::get_random_direction(Vector normal) {

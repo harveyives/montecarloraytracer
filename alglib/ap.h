@@ -35,10 +35,8 @@ http://www.fsf.org/licensing/licenses
 #include <list.h>
 #include <vector.h>
 #else
-
 #include <list>
 #include <vector>
-
 #endif
 
 #define AE_USE_CPP
@@ -174,9 +172,7 @@ namespace alglib_impl {
 #ifdef AE_USE_CPP
 #define AE_USE_CPP_BOOL
 #define AE_USE_CPP_SERIALIZATION
-
 #include <iostream>
-
 #endif
 
 /*
@@ -935,7 +931,6 @@ temporary variables.
     void ae_serializer_sstart_stream(ae_serializer *serializer, std::ostream *stream);
 
     void ae_serializer_ustart_stream(ae_serializer *serializer, const std::istream *stream);
-
 #endif
 
     void ae_serializer_sstart_str(ae_serializer *serializer, char *buf);
@@ -1254,12 +1249,12 @@ debug functions (must be turned on by preprocessor definitions):
 #ifdef AE_DEBUG4WINDOWS
 #define flushconsole(s) fflush(stdout)
 #define tickcount(s) _tickcount()
-    int _tickcount();
+int _tickcount();
 #endif
 #ifdef AE_DEBUG4POSIX
 #define flushconsole(s) fflush(stdout)
 #define tickcount(s) _tickcount()
-    int _tickcount();
+int _tickcount();
 #endif
 
 
@@ -1302,7 +1297,6 @@ Exception class.
 
     private:
     };
-
 #endif
 
 /********************************************************************
@@ -1341,11 +1335,10 @@ Complex number with double precision.
         alglib_impl::ae_complex *c_ptr();
 
         const alglib_impl::ae_complex *c_ptr() const;
-
+    
 #if !defined(AE_NO_EXCEPTIONS)
 
         std::string tostring(int dps) const;
-
 #endif
 
         double x, y;
@@ -1608,7 +1601,6 @@ in commercial ALGLIB but lacking in free edition.
         // NOTE: this function is not supported in exception-free mode.
         //
         ae_vector_wrapper(const char *s, alglib_impl::ae_datatype datatype);
-
 #endif
 
         //
@@ -1712,7 +1704,6 @@ in commercial ALGLIB but lacking in free edition.
         boolean_1d_array(const char *s);
 
         std::string tostring() const;
-
 #endif
     };
 
@@ -1755,7 +1746,6 @@ in commercial ALGLIB but lacking in free edition.
         integer_1d_array(const char *s);
 
         std::string tostring() const;
-
 #endif
     };
 
@@ -1810,7 +1800,6 @@ in commercial ALGLIB but lacking in free edition.
         real_1d_array(const char *s);
 
         std::string tostring(int dps) const;
-
 #endif
     };
 
@@ -1850,7 +1839,6 @@ in commercial ALGLIB but lacking in free edition.
         complex_1d_array(const char *s);
 
         std::string tostring(int dps) const;
-
 #endif
     };
 
@@ -1912,7 +1900,6 @@ in commercial ALGLIB but lacking in free edition.
         // called from copy constructor).
         //
         ae_matrix_wrapper(const char *s, alglib_impl::ae_datatype datatype);
-
 #endif
 
         //
@@ -2014,13 +2001,12 @@ in commercial ALGLIB but lacking in free edition.
         // copy of data is created.
         //
         void setcontent(ae_int_t irows, ae_int_t icols, const bool *pContent);
-
+    
 #if !defined(AE_NO_EXCEPTIONS)
 
         boolean_2d_array(const char *s);
 
         std::string tostring() const;
-
 #endif
     };
 
@@ -2050,14 +2036,13 @@ in commercial ALGLIB but lacking in free edition.
         // copy of data is created.
         //
         void setcontent(ae_int_t irows, ae_int_t icols, const ae_int_t *pContent);
-
-
+    
+    
 #if !defined(AE_NO_EXCEPTIONS)
 
         integer_2d_array(const char *s);
 
         std::string tostring() const;
-
 #endif
     };
 
@@ -2106,7 +2091,6 @@ in commercial ALGLIB but lacking in free edition.
         real_2d_array(const char *s);
 
         std::string tostring(int dps) const;
-
 #endif
     };
 
@@ -2142,7 +2126,6 @@ in commercial ALGLIB but lacking in free edition.
         complex_2d_array(const char *s);
 
         std::string tostring(int dps) const;
-
 #endif
     };
 
@@ -2191,7 +2174,6 @@ HANDLING OF SPECIAL CASES:
 #if !defined(AE_NO_EXCEPTIONS)
 
     void read_csv(const char *filename, char separator, int flags, alglib::real_2d_array &out);
-
 #endif
 
 
@@ -2467,6 +2449,7 @@ namespace alglib_impl {
                                    ae_int_t uoffs,
                                    ae_vector *v,
                                    ae_int_t voffs);
+
 
 
 }

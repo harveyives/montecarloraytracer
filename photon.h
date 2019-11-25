@@ -6,6 +6,7 @@
 #include "ray.h"
 #include <string>
 
+
 using namespace std;
 
 enum class photon_type {
@@ -19,9 +20,9 @@ class Photon {
 public:
     Ray ray;
     Vector colour;
-    photon_type type;
+    string type;
 
-    Photon(Ray r, Vector c, photon_type t) {
+    Photon(Ray r, Vector c, string t) {
         ray = r;
         colour = c;
         type = t;
