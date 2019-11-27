@@ -47,8 +47,8 @@ Scene::Scene(float ambient, bool generate_photon_map) {
 //                                     Material({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
 
     // Spheres
-    Sphere *sphere = new Sphere(Vertex(-5, 0, 50), 12, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 1));
-    Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, Material({255, 255, 255}, 0.6, 0.4));
+    Sphere *sphere = new Sphere(Vertex(6, -10, 40), 5, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 0));
+    Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, Material({255, 255, 255}, 0.0, 0.8));
     Sphere *sphere3 = new Sphere(Vertex(4, 4, 15), 1, Material({0, 0, 255}, 0.4, 0.6, 2, 1, 0));
     Sphere *sphere4 = new Sphere(Vertex(12, 8, 35), 12, Material({255, 0, 0}, 0, 0.4, 1));
 
@@ -67,7 +67,7 @@ Scene::Scene(float ambient, bool generate_photon_map) {
 //        objects.push_back(pm);
 //    objects.push_back(pyramid);
 
-//    objects.push_back(sphere);
+    objects.push_back(sphere);
     objects.push_back(sphere_yellow);
 //        objects.push_back(sphere3);
 //        objects.push_back(sphere4);
@@ -80,17 +80,22 @@ Scene::Scene(float ambient, bool generate_photon_map) {
 //        objects.push_back(behind);
 
     // Adding lights:
-    Light *l1 = new PointLight(Vertex({0, 10, 40}));
+    Light *l1 = new PointLight(Vertex({3, 10, 40}));
+    Light *l2 = new PointLight(Vertex({-3, 10, 40}));
+    Light *l3 = new PointLight(Vertex({3, 10, 45}));
+    Light *l4 = new PointLight(Vertex({-3, 10, 45}));
 //        Light *l2 = new PointLight(Vertex(-9,10,-5));
-    Light *l3 = new DirectionalLight(Vector(0, 0, -1));
+//    Light *l3 = new DirectionalLight(Vector(0, 0, -1));
 
     // Adding to list
     lights.push_back(l1);
-//        lights.push_back(l3);
+    lights.push_back(l2);
+    lights.push_back(l3);
+    lights.push_back(l4);
     // TODO cleanup
     if (generate_photon_map) {
         cout << "Generating new photon map...\n";
-        emit_photons(200000, 20);
+        emit_photons(50000, 50);
         real_2d_array matrix;
         matrix.attach_to_ptr(points.size() / 3, 3, points.data());
         ae_int_t nx = 3;
@@ -181,55 +186,63 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
     Hit hit = Hit();
     check_intersections(ray, hit);
 
+//    colour = colour + hit.what->material.colour * ka;
+    Vector hit_colour = approximate_indirect(ray, hit);
+    Vector indirect = approximate_indirect(ray, hit);
+
     if (hit.flag) {
-        colour = approximate_indirect(ray, hit);
+        float max_value = max({indirect.x, indirect.y, indirect.z});
+        Vector scaled_indirect = {255 * indirect.x / max_value, 255 * indirect.y / max_value,
+                                  255 * indirect.z / max_value};
+//        colour = colour + scaled_indirect;
 //        // TODO change these ugly pointers
 //
 //        Vector hit_colour = hit.what->material.colour;
 //
-//        for (Light *light : lights) {
-//            // if area shaded
-//            if (object_occluded(objects, hit.position, light->position)) {
-//                continue;
-//            }
-//            //get light direction based on point if point light, otherwise get directional light
-//            Vector light_direction = light->get_light_direction(hit.position);
-//            light_direction.normalise();
-//            colour = colour + hit.what->material.shade(ray.direction, light_direction, hit.normal);
-//
-//        }
-//        // multiply by how transparent it is
+        for (Light *light : lights) {
+            // if area shaded
+            if (object_occluded(objects, hit.position, light->position)) {
+                continue;
+            }
+            //get light direction based on point if point light, otherwise get directional light
+            Vector light_direction = light->get_light_direction(hit.position);
+            light_direction.normalise();
+            colour = colour + hit.what->material.compute_colour(ray.direction, light_direction, hit.normal,
+                                                                hit.what->material.colour);
+
+        }
+        // multiply by how transparent it is
 //        colour = colour + hit_colour * ka * (1 - hit.what->material.t);
-//        colour = colour / lights.size();
-//
-//
-//        // cos(theta1)
-//        float cos_i = max(-1.f, min(ray.direction.dot(hit.normal), 1.f));
-//        // compute kr by Fresnel only if transparent
-//        float kr = (hit.what->material.t != 0) ? fresnel(hit.what->material.ior, cos_i) : hit.what->material.r;
-//
-//        // Remove speckles TODO reuse this in shadow
-//        Vector shift_bias = 0.001 * hit.normal;
-//
-//        // only compute if reflective material
-//        if (hit.what->material.r != 0) {
-//            Ray reflection_ray;
-//            hit.normal.reflection(ray.direction, reflection_ray.direction);
-//            reflection_ray.direction.normalise();
-//            reflection_ray.position = cos_i < 0 ? hit.position + shift_bias : hit.position + -shift_bias;
-//
-//            colour = colour + kr * compute_colour(reflection_ray, depth - 1);
-//        }
-//        // if kr = 1 then total internal reflection, so only reflect
-//        if (hit.what->material.t != 0 && kr < 1) {
-//            Ray refraction_ray = Ray();
-//            refraction_ray.direction = refract(ray.direction, hit.normal, hit.what->material.ior, cos_i);
-//            refraction_ray.direction.normalise();
-//
-//            refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
-//
-//            colour = colour + (1 - kr) * compute_colour(refraction_ray, depth - 1);
-//        }
+        colour = colour / lights.size();
+
+
+        // cos(theta1)
+        float cos_i = max(-1.f, min(ray.direction.dot(hit.normal), 1.f));
+        // compute kr by Fresnel only if transparent
+        float kr = (hit.what->material.t != 0) ? fresnel(hit.what->material.ior, cos_i) : hit.what->material.r;
+
+        // Remove speckles TODO reuse this in shadow
+        Vector shift_bias = 0.001 * hit.normal;
+
+        // only compute if reflective material
+        if (hit.what->material.r != 0) {
+            Ray reflection_ray;
+            hit.normal.reflection(ray.direction, reflection_ray.direction);
+            reflection_ray.direction.normalise();
+            reflection_ray.position = cos_i < 0 ? hit.position + shift_bias : hit.position + -shift_bias;
+
+            colour = colour + kr * compute_colour(reflection_ray, depth - 1);
+        }
+        // if kr = 1 then total internal reflection, so only reflect
+        if (hit.what->material.t != 0 && kr < 1) {
+            Ray refraction_ray = Ray();
+            refraction_ray.direction = refract(ray.direction, hit.normal, hit.what->material.ior, cos_i);
+            refraction_ray.direction.normalise();
+
+            refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
+
+            colour = colour + (1 - kr) * compute_colour(refraction_ray, depth - 1);
+        }
     }
     return colour;
 }
@@ -263,17 +276,17 @@ Vector Scene::approximate_emmissive(Ray &ray, Hit &hit) {
 
 Vector Scene::approximate_indirect(Ray &ray, Hit &hit) {
     Vector indirect_diffuse = Vector();
-    vector<Photon> local_photons = gather_photons(hit.position, 500);
+    vector<Photon> local_photons = gather_photons(hit.position, 100);
     float max_dist = -1;
     //calculate distance first
     for (Photon p: local_photons) {
-//        if (p.type != photon_type::indirect) continue;
+//        if (p.type != "indirect") continue;
         float dist = (p.ray.position - hit.position).magnitude();
         if (dist > max_dist) max_dist = dist;
     }
 
     for (Photon p: local_photons) {
-//        if (p.type != photon_type::indirect) continue;
+//        if (p.type != "indirect") continue;
 
 
         float alpha = 0.918;
@@ -291,12 +304,14 @@ Vector Scene::approximate_indirect(Ray &ray, Hit &hit) {
             continue;
         }
 
-        indirect_diffuse = indirect_diffuse +
-                           hit.what->material.compute_colour(ray.direction, v, hit.normal, p.colour);// * gaussian;
+//        indirect_diffuse = indirect_diffuse + hit.what->material.colour * diffuse;
+//        indirect_diffuse = indirect_diffuse + hit.what->material.compute_colour(ray.direction, v, hit.normal, p.colour);
+        indirect_diffuse =
+                indirect_diffuse + hit.what->material.compute_colour(ray.direction, v, hit.normal, p.colour) * gaussian;
     }
 
-//    Vector colour = indirect_diffuse;
-    Vector colour = indirect_diffuse / (M_PI * max_dist * max_dist);
+    Vector colour = indirect_diffuse;
+//    Vector colour = indirect_diffuse / (M_PI * max_dist * max_dist);
     return colour;
 }
 

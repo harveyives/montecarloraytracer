@@ -47,7 +47,6 @@ public:
         }
 
         result = result + base_colour * pow(specular, 128) * ks;
-
         return result;
     }
 
