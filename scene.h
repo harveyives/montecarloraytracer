@@ -38,7 +38,7 @@ public:
 
     Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i);
 
-    Vector get_random_direction(Vector normal);
+    Vector get_random_vector_in_direction(Vector direction);
 
     float get_random_number(int min, int max);
 
@@ -65,5 +65,9 @@ public:
     Vector approximate_emmissive(Ray &ray, Hit &hit);
 
     vector<string> split_string(string line);
+
+    Vector get_random_point_on_hemisphere(Vector normal);
+
+    Vector get_random_vector();
 };
 #endif //CODE_SCENE_H

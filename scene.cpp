@@ -80,10 +80,10 @@ Scene::Scene(float ambient, bool generate_photon_map) {
 //        objects.push_back(behind);
 
     // Adding lights:
-    Light *l1 = new PointLight(Vertex({3, 10, 40}));
-    Light *l2 = new PointLight(Vertex({-3, 10, 40}));
-    Light *l3 = new PointLight(Vertex({3, 10, 45}));
-    Light *l4 = new PointLight(Vertex({-3, 10, 45}));
+    Light *l1 = new PointLight(Vertex({3, 13, 40}));
+    Light *l2 = new PointLight(Vertex({-3, 13, 40}));
+    Light *l3 = new PointLight(Vertex({3, 13, 45}));
+    Light *l4 = new PointLight(Vertex({-3, 13, 45}));
 //        Light *l2 = new PointLight(Vertex(-9,10,-5));
 //    Light *l3 = new DirectionalLight(Vector(0, 0, -1));
 
@@ -186,10 +186,9 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
     Hit hit = Hit();
     check_intersections(ray, hit);
 
-//    colour = colour + hit.what->material.colour * ka;
     Vector hit_colour = approximate_indirect(ray, hit);
+    colour = colour + hit_colour * ka;
     Vector indirect = approximate_indirect(ray, hit);
-
     if (hit.flag) {
         float max_value = max({indirect.x, indirect.y, indirect.z});
         Vector scaled_indirect = {255 * indirect.x / max_value, 255 * indirect.y / max_value,
@@ -201,14 +200,14 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 //
         for (Light *light : lights) {
             // if area shaded
-            if (object_occluded(objects, hit.position, light->position)) {
-                continue;
-            }
+//            if (object_occluded(objects, hit.position, light->position)) {
+//                continue;
+//            }
             //get light direction based on point if point light, otherwise get directional light
             Vector light_direction = light->get_light_direction(hit.position);
             light_direction.normalise();
             colour = colour + hit.what->material.compute_colour(ray.direction, light_direction, hit.normal,
-                                                                hit.what->material.colour);
+                                                                hit_colour);
 
         }
         // multiply by how transparent it is
@@ -247,36 +246,9 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
     return colour;
 }
 
-
-Vector Scene::approximate_emmissive(Ray &ray, Hit &hit) {
-    Vector indirect_diffuse = Vector();
-    vector<Photon> local_photons = gather_photons(hit.position, 800);
-    float max_dist = -1;
-    //calculate distance first
-    for (Photon p: local_photons) {
-        if (p.type != "direct") continue;
-        float dist = (p.ray.position - hit.position).magnitude();
-        if (dist > max_dist) max_dist = dist;
-    }
-
-    for (Photon p: local_photons) {
-        if (p.type != "direct") continue;
-
-        float alpha = 0.918;
-        float beta = 1.953;
-        float dist = (p.ray.position - hit.position).magnitude();
-        float gaussian = alpha * (1 - (1 - exp(-beta * (dist * dist) / (2 * max_dist * max_dist))) / (1 - exp(-beta)));
-
-        indirect_diffuse = indirect_diffuse + p.colour * gaussian;
-    }
-
-    Vector colour = indirect_diffuse;
-    return colour;
-}
-
 Vector Scene::approximate_indirect(Ray &ray, Hit &hit) {
     Vector indirect_diffuse = Vector();
-    vector<Photon> local_photons = gather_photons(hit.position, 100);
+    vector<Photon> local_photons = gather_photons(hit.position, 900);
     float max_dist = -1;
     //calculate distance first
     for (Photon p: local_photons) {
@@ -400,7 +372,7 @@ void Scene::emit_photons(int n, int depth) {
     for (Light *light : lights) {
         for (int i = 0; i < n; i++) {
             // TODO improve this for other lights
-            Vector direction = get_random_direction();
+            Vector direction = get_random_vector_in_direction({0, -1, 0});
             Ray ray = Ray(light->position, direction);
             Photon photon = Photon(ray, direction, "direct");
             trace_photon(photon, depth);
@@ -437,7 +409,7 @@ void Scene::trace_photon(Photon photon, int depth) {
         float p = get_random_number(0, 1);
         if (p <= m.kd) {
             //diffuse
-            photon.ray.direction = get_random_direction(hit.normal);
+            photon.ray.direction = get_random_vector_in_direction(hit.normal);
             photon.colour = photon.colour;
             photon.type = "indirect";
             trace_photon(photon, depth - 1);
@@ -499,22 +471,39 @@ photon_type Scene::get_majority_type(Vertex query) {
 //    return max->first;
 }
 
-Vector Scene::get_random_direction(Vector normal) {
+Vector Scene::get_random_vector_in_direction(Vector direction) {
     Vector random = get_random_direction();
-    Vector n = normal;
-    n.normalise();
-//    if(random.dot(n) <= 0) random.negate();
-    n.normalise();
-    Vector direction = n + random;
     direction.normalise();
-    return direction;
+    random.normalise();
+    if (random.dot(direction) <= 0) random.negate();
+    return random;
 }
 
 Vector Scene::get_random_direction() {
-    Vector random = Vector(get_random_number(-10000, 10000), get_random_number(-10000, 10000),
-                           get_random_number(-10000, 10000));
+    Vector random = Vector(get_random_number(-1, 1), get_random_number(-1, 1),
+                           get_random_number(-1, 1));
     random.normalise();
     return random;
+}
+
+Vector Scene::get_random_point_on_hemisphere(Vector normal) {
+    Vector direction = get_random_vector();
+
+    if (normal.dot(direction) < 0) direction.negate();
+
+    return direction;
+}
+
+Vector Scene::get_random_vector() {
+    float n1 = get_random_number(0, 1);
+    float n2 = get_random_number(0, 1);
+
+    float theta = 2 * M_PI * n1;
+    float phi = M_PI * n2;
+
+    Vector direction = Vector(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+    direction.normalise();
+    return direction;
 }
 
 float Scene::get_random_number(int min, int max) {
