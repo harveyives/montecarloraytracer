@@ -97,44 +97,13 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     if (!photon_mapping) return;
 
     if (generate_photon_map) {
-        cout << "Generating new photon map...\n";
+        cout << "Generating new photon map...  ";
         emit_photons(50000, 50);
-        real_2d_array matrix;
-        matrix.attach_to_ptr(points.size() / 3, 3, points.data());
-        ae_int_t nx = 3;
-        ae_int_t ny = 0;
-        ae_int_t normtype = 2;
-        real_1d_array x;
-        integer_1d_array input;
-        input.setcontent(points.size() / 3, tags.data());
-        kdtreebuildtagged(matrix, input, nx, ny, normtype, kdt);
-        cout << "Writing to file...\n";
-        std::stringstream ss;
-        kdtreeserialize(kdt, ss);
-        std::ofstream outFile;
-        outFile.open("kdtree", ios::out);
-        outFile << ss.str();
-        outFile.close();
-
-        std::ifstream file("kdtree");
-        std::stringstream buffer;
-
-        buffer << file.rdbuf();
-
-        file.close();
-        kdtreeunserialize(buffer, kdt);
-
-        ofstream ofs("photons", ios::out);
-
-        for (size_t i = 0; i < photons.size(); i++) {
-            ofs << photons[i].colour.x << "\t" << photons[i].colour.y << "\t" << photons[i].colour.z << "\t"
-                << photons[i].ray.direction.x << "\t" << photons[i].ray.direction.y << "\t"
-                << photons[i].ray.direction.z << "\t"
-                << photons[i].ray.position.x << "\t" << photons[i].ray.position.y << "\t" << photons[i].ray.position.z
-                << "\t"
-                << photons[i].type << "\r\n";
-        }
-        cout << "Done writing to file." << endl;
+        build_kd_tree();
+        cout << "DONE.\n";
+        cout << "Writing to file...  ";
+        save_map_to_file();
+        cout << "DONE.\n";
     } else {
         cout << "Loading pre-built map...\n";
         std::ifstream file("kdtree");
@@ -161,6 +130,45 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     }
 
     return;
+}
+
+void Scene::save_map_to_file() {
+    stringstream ss;
+    kdtreeserialize(kdt, ss);
+    ofstream outFile;
+    outFile.open("kdtree", ios::out);
+    outFile << ss.str();
+    outFile.close();
+
+    ifstream file("kdtree");
+    stringstream buffer;
+
+    buffer << file.rdbuf();
+    file.close();
+
+    ofstream ofs("photons", ios::out);
+
+    for (size_t i = 0; i < photons.size(); i++) {
+        ofs << photons[i].colour.x << "\t" << photons[i].colour.y << "\t" << photons[i].colour.z << "\t"
+            << photons[i].ray.direction.x << "\t" << photons[i].ray.direction.y << "\t"
+            << photons[i].ray.direction.z << "\t"
+            << photons[i].ray.position.x << "\t" << photons[i].ray.position.y << "\t" << photons[i].ray.position.z
+            << "\t"
+            << photons[i].type << "\r\n";
+    }
+    ofs.close();
+}
+
+void Scene::build_kd_tree() {
+    real_2d_array matrix;
+    matrix.attach_to_ptr(points.size() / 3, 3, points.data());
+    ae_int_t nx = 3;
+    ae_int_t ny = 0;
+    ae_int_t normtype = 2;
+    real_1d_array x;
+    integer_1d_array input;
+    input.setcontent(points.size() / 3, tags.data());
+    kdtreebuildtagged(matrix, input, nx, ny, normtype, kdt);
 }
 
 //TODO move this to utils
@@ -211,9 +219,17 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
             //get light direction based on point if point light, otherwise get directional light
             Vector light_direction = light->get_light_direction(hit.position);
             light_direction.normalise();
-            colour = colour + hit.what->material.compute_colour(ray.direction, light_direction, hit.normal,
-                                                                hit_colour);
+//            colour = colour + hit.what->material.compute_colour(ray.direction, light_direction, hit.normal,
+//                                                                hit_colour);
+            Vector reflection = Vector();
+            hit.normal.reflection(light_direction, reflection);
+            float specular = reflection.dot(ray.direction);
+            // thus no contribution
+            if (specular < 0) {
+                specular = 0.0;
+            }
 
+            colour = colour + hit_colour * pow(specular, 128) * hit.what->material.ks;
         }
         // multiply by how transparent it is
 //        colour = colour + hit_colour * ka * (1 - hit.what->material.t);
@@ -262,33 +278,19 @@ Vector Scene::approximate_indirect(Ray &ray, Hit &hit) {
         if (dist > max_dist) max_dist = dist;
     }
 
+    float k = 2;
     for (Photon p: local_photons) {
-//        if (p.type != "indirect") continue;
-
-
-        float alpha = 0.918;
-        float beta = 1.953;
         float dist = (p.ray.position - hit.position).magnitude();
-        float gaussian =
-                alpha * (1 - (1 - exp(-beta * ((dist * dist) / (2 * max_dist * max_dist)))) / (1 - exp(-beta)));
-
-
+        float cone_filter = 1 - (dist / (k * max_dist));
         Vector v = p.ray.direction;
+        v.normalise();
         v.negate();
-        float diffuse = v.dot(hit.normal);
-        //thus self occlusion
-        if (diffuse < 0) {
-            continue;
-        }
-
-//        indirect_diffuse = indirect_diffuse + hit.what->material.colour * diffuse;
-//        indirect_diffuse = indirect_diffuse + hit.what->material.compute_colour(ray.direction, v, hit.normal, p.colour);
-        indirect_diffuse =
-                indirect_diffuse + hit.what->material.compute_colour(ray.direction, v, hit.normal, p.colour) * gaussian;
+        indirect_diffuse = indirect_diffuse +
+                           hit.what->material.compute_colour(ray.direction, v, hit.normal, p.colour) * cone_filter;
     }
 
-    Vector colour = indirect_diffuse;
-//    Vector colour = indirect_diffuse / (M_PI * max_dist * max_dist);
+//    Vector colour = indirect_diffuse;
+    Vector colour = indirect_diffuse / ((M_PI * max_dist * max_dist) * (1 - (2 / (3 * k))));
     return colour;
 }
 
@@ -373,11 +375,11 @@ Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index
 }
 
 void Scene::emit_photons(int n, int depth) {
-    cout << "Mapping photons..." << endl;
     for (Light *light : lights) {
         for (int i = 0; i < n; i++) {
             // TODO improve this for other lights
             Vector direction = get_random_vector_in_direction({0, -1, 0});
+//            Vector direction = get_random_vector();
             Ray ray = Ray(light->position, direction);
             Photon photon = Photon(ray, direction, "direct");
             trace_photon(photon, depth);
@@ -387,7 +389,6 @@ void Scene::emit_photons(int n, int depth) {
             p.colour = p.colour / n;
         }
     }
-    cout << "Mapping complete." << endl;
 }
 
 void Scene::trace_photon(Photon photon, int depth) {
@@ -447,14 +448,14 @@ vector<Photon> Scene::gather_photons(Vertex query, int k) {
 }
 
 Vector Scene::get_random_vector_in_direction(Vector direction) {
-    Vector random = get_random_direction();
+    Vector random = get_random_vector();
     direction.normalise();
     random.normalise();
     if (random.dot(direction) <= 0) random.negate();
     return random;
 }
 
-Vector Scene::get_random_direction() {
+Vector Scene::get_random_vector() {
     Vector random = Vector(get_random_number(-1, 1), get_random_number(-1, 1),
                            get_random_number(-1, 1));
     random.normalise();
@@ -469,17 +470,17 @@ Vector Scene::get_random_point_on_hemisphere(Vector normal) {
     return direction;
 }
 
-Vector Scene::get_random_vector() {
-    float n1 = get_random_number(0, 1);
-    float n2 = get_random_number(0, 1);
-
-    float theta = 2 * M_PI * n1;
-    float phi = M_PI * n2;
-
-    Vector direction = Vector(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
-    direction.normalise();
-    return direction;
-}
+//Vector Scene::get_random_vector() {
+//    float n1 = get_random_number(0, 1);
+//    float n2 = get_random_number(0, 1);
+//
+//    float theta = 2 * M_PI * n1;
+//    float phi = M_PI * n2;
+//
+//    Vector direction = Vector(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+//    direction.normalise();
+//    return direction;
+//}
 
 float Scene::get_random_number(int min, int max) {
     random_device device;

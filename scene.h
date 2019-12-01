@@ -61,8 +61,6 @@ public:
 
     float BRDF(Hit hit, Vector incoming, Vector view);
 
-    Vector get_random_direction();
-
     Vector approximate_emmissive(Ray &ray, Hit &hit);
 
     vector<string> split_string(string line);
@@ -70,5 +68,9 @@ public:
     Vector get_random_point_on_hemisphere(Vector normal);
 
     Vector get_random_vector();
+
+    void build_kd_tree();
+
+    void save_map_to_file();
 };
 #endif //CODE_SCENE_H
