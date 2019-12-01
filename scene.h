@@ -21,12 +21,13 @@ public:
     vector<Object *> objects;
     vector<Light *> lights;
     float ka;
+    bool photon_mapping;
     vector<Photon> photons;
     vector<double> points;
     vector<long> tags;
     kdtree kdt;
 
-    Scene(float ambient, bool generate_photon_map);
+    Scene(float ambient, bool mapping, bool generate_photon_map);
 
     Hit check_intersections(Ray &ray, Hit &hit);
 

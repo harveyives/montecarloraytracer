@@ -19,7 +19,8 @@ using namespace std;
 int main(int argc, char *argv[]) {
     int width = stoi(argv[1]);
     int height = stoi(argv[2]);
-    bool generate_photon_map = stoi(argv[3]);
+    bool photon_mapping = stoi(argv[3]);
+    bool generate_photon_map = stoi(argv[4]);
 
     // Create a framebuffer
     FrameBuffer *fb = new FrameBuffer(width, height);
@@ -29,7 +30,7 @@ int main(int argc, char *argv[]) {
     Vector up = Vector(0, 1, 0);
     // TODO move this to the scene?
     Camera *camera = new Camera(eye, look, up, 1, 50, height, width);
-    Scene *scene = new Scene(0.6, generate_photon_map);
+    Scene *scene = new Scene(0.6, photon_mapping, generate_photon_map);
 
 //    #pragma omp parallel for collapse(2)
     for (int c = 0; c < width; c++) {

@@ -26,8 +26,9 @@
 
 using namespace alglib;
 
-Scene::Scene(float ambient, bool generate_photon_map) {
+Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     ka = ambient;
+    photon_mapping = mapping;
     // Adding objects:
 
     // Polys
@@ -93,6 +94,8 @@ Scene::Scene(float ambient, bool generate_photon_map) {
     lights.push_back(l3);
     lights.push_back(l4);
     // TODO cleanup
+    if (!photon_mapping) return;
+
     if (generate_photon_map) {
         cout << "Generating new photon map...\n";
         emit_photons(50000, 50);
@@ -156,6 +159,8 @@ Scene::Scene(float ambient, bool generate_photon_map) {
         }
         cout << "Done loading map." << endl;
     }
+
+    return;
 }
 
 //TODO move this to utils
@@ -186,13 +191,13 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
     Hit hit = Hit();
     check_intersections(ray, hit);
 
-    Vector hit_colour = approximate_indirect(ray, hit);
+    Vector hit_colour = (!photon_mapping) ? hit.what->material.colour : approximate_indirect(ray, hit);
     colour = colour + hit_colour * ka;
-    Vector indirect = approximate_indirect(ray, hit);
+//    Vector indirect = approximate_indirect(ray, hit);
     if (hit.flag) {
-        float max_value = max({indirect.x, indirect.y, indirect.z});
-        Vector scaled_indirect = {255 * indirect.x / max_value, 255 * indirect.y / max_value,
-                                  255 * indirect.z / max_value};
+//        float max_value = max({indirect.x, indirect.y, indirect.z});
+//        Vector scaled_indirect = {255 * indirect.x / max_value, 255 * indirect.y / max_value,
+//                                  255 * indirect.z / max_value};
 //        colour = colour + scaled_indirect;
 //        // TODO change these ugly pointers
 //
