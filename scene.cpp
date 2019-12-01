@@ -424,18 +424,6 @@ void Scene::trace_photon(Photon photon, int depth) {
     }
 }
 
-Photon Scene::get_nearest_photon(Vertex query) {
-    vector<double> point = {query.x, query.y, query.z};
-    real_1d_array x;
-    x.setcontent(3, point.data());
-
-    ae_int_t k = kdtreequeryknn(kdt, x, 1);
-    real_2d_array r = "[[]]";
-    integer_1d_array output_tags = "[]";
-    kdtreequeryresultstags(kdt, output_tags);
-    return photons[output_tags[0]];
-}
-
 vector<Photon> Scene::gather_photons(Vertex query, int k) {
     vector<double> point = {query.x, query.y, query.z};
     real_1d_array x;
@@ -451,24 +439,6 @@ vector<Photon> Scene::gather_photons(Vertex query, int k) {
         local_photons.push_back(photons[output_tags[i]]);
     }
     return local_photons;
-}
-
-photon_type Scene::get_majority_type(Vertex query) {
-//    vector<Photon> gathered_photons = gather_photons(query, 10);
-//    map<photon_type, int> map;
-//    map.insert(make_pair(photon_type::direct, 0));
-//    map.insert(make_pair(photon_type::indirect, 0));
-//    map.insert(make_pair(photon_type::shadow, 0));
-//    map.insert(make_pair(photon_type::caustic, 0));
-//    for (Photon p: gathered_photons) {
-//        map[p.type]++;
-//    }
-//
-//    auto max = max_element(map.begin(), map.end(),
-//                           [](const pair<photon_type, int> &a, const pair<photon_type, int> &b) {
-//                               return a.second < b.second;
-//                           });
-//    return max->first;
 }
 
 Vector Scene::get_random_vector_in_direction(Vector direction) {
