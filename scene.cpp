@@ -23,21 +23,21 @@
 #include <vector>
 #include <algorithm>
 #include "vector.h"
+#include "utils.h"
 
 using namespace alglib;
-
 Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     ka = ambient;
     photon_mapping = mapping;
     // Adding objects:
 
     // Polys
-//    Transform *transform = new Transform(
-//            1.5, 0, 0, 2,
-//            0, 0, 1.5, -2,
-//            0, 1.5, 0, 25.0,
-//            0, 0, 1.5, 1);
-//    PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Material({0, 255, 0}, 0.8, 0.1, 1, 0.4, 0));
+    Transform *transform = new Transform(
+            1.5, 0, 0, 2,
+            0, 0, 1.5, -2,
+            0, 1.5, 0, 45.0,
+            0, 0, 1.5, 1);
+    PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Material({0, 255, 0}, 0.8, 0.1, 1, 0.4, 0));
 //
 //    Transform *transform_pyramid = new Transform(
 //            5, 0, 0, -2.5,
@@ -52,6 +52,7 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, Material({255, 255, 255}, 0.0, 0.8));
     Sphere *sphere3 = new Sphere(Vertex(4, 4, 15), 1, Material({0, 0, 255}, 0.4, 0.6, 2, 1, 0));
     Sphere *sphere4 = new Sphere(Vertex(12, 8, 35), 12, Material({255, 0, 0}, 0, 0.4, 1));
+
 
     // Cornell Box
     Material wall = Material({255, 255, 255}, 0.0, 0.6, 1);
@@ -78,16 +79,11 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     objects.push_back(left);
     objects.push_back(right);
     objects.push_back(back);
-//        objects.push_back(behind);
-
     // Adding lights:
     Light *l1 = new PointLight(Vertex({3, 13, 40}));
     Light *l2 = new PointLight(Vertex({-3, 13, 40}));
     Light *l3 = new PointLight(Vertex({3, 13, 45}));
     Light *l4 = new PointLight(Vertex({-3, 13, 45}));
-//        Light *l2 = new PointLight(Vertex(-9,10,-5));
-//    Light *l3 = new DirectionalLight(Vector(0, 0, -1));
-
     // Adding to list
     lights.push_back(l1);
     lights.push_back(l2);
@@ -97,39 +93,44 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     if (!photon_mapping) return;
 
     if (generate_photon_map) {
-        cout << "Generating new photon map...  ";
+        cout << "Generating new photon map...  " << endl;
         emit_photons(50000, 50);
         build_kd_tree();
-        cout << "DONE.\n";
-        cout << "Writing to file...  ";
+        cout << "DONE" << endl;
+        cout << "Writing to file... " << endl;
         save_map_to_file();
-        cout << "DONE.\n";
+        cout << "DONE" << endl;
     } else {
-        cout << "Loading pre-built map...\n";
-        std::ifstream file("kdtree");
-        std::stringstream buffer;
-
-        buffer << file.rdbuf();
-
-        file.close();
-        kdtreeunserialize(buffer, kdt);
-
-        ifstream ifs("photons", ios::in);
-
-        string line;
-        while (getline(ifs, line)) {
-            vector<string> photon_line = split_string(line);
-            Vector colour = Vector(stoi(photon_line[0]), stoi(photon_line[1]), stoi(photon_line[2]));
-            Vector direction = Vector(stof(photon_line[3]), stof(photon_line[4]), stof(photon_line[5]));
-            Vertex position = Vertex(stof(photon_line[6]), stof(photon_line[7]), stof(photon_line[8]));
-            string type = photon_line[9];
-            Photon photon = Photon(Ray(position, direction), colour, type);
-            photons.push_back(photon);
-        }
-        cout << "Done loading map." << endl;
+        cout << "Loading pre-built map... " << endl;
+        load_map_from_file();
+        cout << "DONE" << endl;
     }
 
     return;
+}
+
+void Scene::load_map_from_file() {
+    // TODO rename these and refacor
+    ifstream file("kdtree");
+    stringstream buffer;
+
+    buffer << file.rdbuf();
+
+    file.close();
+    kdtreeunserialize(buffer, kdt);
+
+    ifstream ifs("photons", ios::in);
+
+    string line;
+    while (getline(ifs, line)) {
+        vector<string> photon_line = Utils::split_string(line);
+        Vector colour = Vector(stof(photon_line[0]), stof(photon_line[1]), stof(photon_line[2]));
+        Vector direction = Vector(stof(photon_line[3]), stof(photon_line[4]), stof(photon_line[5]));
+        Vertex position = Vertex(stof(photon_line[6]), stof(photon_line[7]), stof(photon_line[8]));
+        string type = photon_line[9];
+        Photon photon = Photon(Ray(position, direction), colour, type);
+        photons.push_back(photon);
+    }
 }
 
 void Scene::save_map_to_file() {
@@ -171,14 +172,6 @@ void Scene::build_kd_tree() {
     kdtreebuildtagged(matrix, input, nx, ny, normtype, kdt);
 }
 
-//TODO move this to utils
-vector<string> Scene::split_string(string line) {
-    istringstream ss(line);
-    istream_iterator<string> begin(ss), end;
-    vector<string> words(begin, end);
-    return words;
-}
-
 Hit Scene::check_intersections(Ray &ray, Hit &hit) {
     for (Object *obj : objects) {
         Hit obj_hit = Hit();
@@ -213,14 +206,12 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 //
         for (Light *light : lights) {
             // if area shaded
-//            if (object_occluded(objects, hit.position, light->position)) {
-//                continue;
-//            }
+            if (object_occluded(objects, hit.position, light->position)) {
+                continue;
+            }
             //get light direction based on point if point light, otherwise get directional light
             Vector light_direction = light->get_light_direction(hit.position);
             light_direction.normalise();
-//            colour = colour + hit.what->material.compute_colour(ray.direction, light_direction, hit.normal,
-//                                                                hit_colour);
             Vector reflection = Vector();
             hit.normal.reflection(light_direction, reflection);
             float specular = reflection.dot(ray.direction);
@@ -230,9 +221,11 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
             }
 
             colour = colour + hit_colour * pow(specular, 128) * hit.what->material.ks;
+//            colour = colour + hit.what->material.compute_colour(ray.direction, light_direction, hit.normal,
+//                                                                hit_colour);
         }
         // multiply by how transparent it is
-//        colour = colour + hit_colour * ka * (1 - hit.what->material.t);
+        colour = colour + hit_colour * ka * (1 - hit.what->material.t);
         colour = colour / lights.size();
 
 
@@ -412,7 +405,7 @@ void Scene::trace_photon(Photon photon, int depth) {
         }
 
         // Russian Roulette
-        float p = get_random_number(0, 1);
+        float p = Utils::get_random_number(0, 1);
         if (p <= m.kd) {
             //diffuse
             photon.ray.direction = get_random_vector_in_direction(hit.normal);
@@ -456,8 +449,8 @@ Vector Scene::get_random_vector_in_direction(Vector direction) {
 }
 
 Vector Scene::get_random_vector() {
-    Vector random = Vector(get_random_number(-1, 1), get_random_number(-1, 1),
-                           get_random_number(-1, 1));
+    Vector random = Vector(Utils::get_random_number(-1, 1), Utils::get_random_number(-1, 1),
+                           Utils::get_random_number(-1, 1));
     random.normalise();
     return random;
 }
@@ -468,24 +461,4 @@ Vector Scene::get_random_point_on_hemisphere(Vector normal) {
     if (normal.dot(direction) < 0) direction.negate();
 
     return direction;
-}
-
-//Vector Scene::get_random_vector() {
-//    float n1 = get_random_number(0, 1);
-//    float n2 = get_random_number(0, 1);
-//
-//    float theta = 2 * M_PI * n1;
-//    float phi = M_PI * n2;
-//
-//    Vector direction = Vector(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
-//    direction.normalise();
-//    return direction;
-//}
-
-float Scene::get_random_number(int min, int max) {
-    random_device device;
-    mt19937 random(device());
-    uniform_real_distribution<> distribution(min, max);
-    auto n = distribution(random);
-    return n;
 }

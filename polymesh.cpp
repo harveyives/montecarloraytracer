@@ -18,6 +18,7 @@
 
 #include "polymesh.h"
 #include "sphere.h"
+#include "utils.h"
 
 using namespace std;
 
@@ -46,18 +47,18 @@ void PolyMesh::do_construct(char *file, Transform *transform)
 
     //vertex
     getline(f, line);
-    vector<string> vertexLine = this->split_string(line);
+    vector<string> vertexLine = Utils::split_string(line);
     vertex_count = stoi(vertexLine[2]);
 
     //face
     getline(f, line);
-    vector<string> faceLine = this->split_string(line);
+    vector<string> faceLine = Utils::split_string(line);
     triangle_count = stoi(faceLine[2]);
 
     Vertex *vertices = new Vertex[PolyMesh::vertex_count];
     for(int i = 0; i < vertex_count; i++) {
         getline(f, line);
-        vector<string> temp = this->split_string(line);
+        vector<string> temp = Utils::split_string(line);
         vertices[i] = *new Vertex(
                 stof(temp[0]),
                 stof(temp[1]),
@@ -70,19 +71,12 @@ void PolyMesh::do_construct(char *file, Transform *transform)
     TriangleIndex *triangles = new TriangleIndex[PolyMesh::triangle_count];
     for(int i = 0; i < triangle_count; i++) {
         getline(f, line);
-        vector<string> temp = this->split_string(line);
+        vector<string> temp = Utils::split_string(line);
         triangles[i][0] = stoi(temp[1]);
         triangles[i][1] = stoi(temp[2]);
         triangles[i][2] = stoi(temp[3]);
     }
     PolyMesh::triangle = triangles;
-}
-
-vector<string> PolyMesh::split_string(string line) {
-    istringstream ss(line);
-    istream_iterator<string> begin(ss), end;
-    vector<string> words(begin, end);
-    return words;
 }
 
 void PolyMesh::find_bounding_sphere_values(Vertex centre, float radius) {
@@ -125,9 +119,9 @@ void PolyMesh::find_bounding_sphere_values(Vertex centre, float radius) {
 
 void PolyMesh::intersection(Ray ray, Hit &hit) {
 //    //Before testing polymesh intersection, check bounding sphere;
-//    Hit bounding_hit = Hit();
-//    bounding_sphere->intersection(ray, bounding_hit);
-//    if(!bounding_hit.flag) return;
+    Hit bounding_hit = Hit();
+    bounding_sphere->intersection(ray, bounding_hit);
+    if (!bounding_hit.flag) return;
 
     hit.flag = false;
     float epsilon = 0.00000001;

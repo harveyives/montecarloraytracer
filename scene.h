@@ -41,8 +41,6 @@ public:
 
     Vector get_random_vector_in_direction(Vector direction);
 
-    float get_random_number(int min, int max);
-
     Vector sample(Vertex query, int k);
 
     void trace_photon(Photon photon, int depth);
@@ -63,8 +61,6 @@ public:
 
     Vector approximate_emmissive(Ray &ray, Hit &hit);
 
-    vector<string> split_string(string line);
-
     Vector get_random_point_on_hemisphere(Vector normal);
 
     Vector get_random_vector();
@@ -72,5 +68,7 @@ public:
     void build_kd_tree();
 
     void save_map_to_file();
+
+    void load_map_from_file();
 };
 #endif //CODE_SCENE_H

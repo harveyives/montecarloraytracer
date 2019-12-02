@@ -27,7 +27,6 @@ public:
 	TriangleIndex *triangle;
 	Object *bounding_sphere;
 
-    std::vector<std::string> split_string(std::string text);
     void do_construct(char *file, Transform *transform);
     PolyMesh(char *file);
     PolyMesh(char *file, Transform *transform);

@@ -1,3 +1,5 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "openmp-use-default-none"
 /***************************************************************************
  *
  * krt - Kens Raytracer - Coursework Edition. (C) Copyright 1997-2019.
@@ -32,19 +34,26 @@ int main(int argc, char *argv[]) {
     Camera *camera = new Camera(eye, look, up, 1, 50, height, width);
     Scene *scene = new Scene(0.6, photon_mapping, generate_photon_map);
 
-//    #pragma omp parallel for collapse(2)
-    for (int c = 0; c < width; c++) {
-      for(int r = 0; r < height; r++) {
-          Ray ray = Ray(eye, camera->get_ray_direction(c, r));
+    clock_t start;
+    double duration;
 
-          Vector colour = scene->compute_colour(ray, 4);
-          fb->plotPixel(c, r, colour.x, colour.y, colour.z);
-      }
+    start = clock();
+    cout << "Tracing... " << endl;
+    for (int c = 0; c < width; c++) {
+        for (int r = 0; r < height; r++) {
+            Ray ray = Ray(eye, camera->get_ray_direction(c, r));
+
+            Vector colour = scene->compute_colour(ray, 4);
+            fb->plotPixel(c, r, colour.x, colour.y, colour.z);
+        }
     }
+    cout << "DONE" << endl;
+    duration = (clock() - start) / (double) CLOCKS_PER_SEC;
+
+    std::cout << "printf: " << duration << '\n';
 
     //   Output the framebuffer.
     cout << "Outputting..." << endl;
     fb->writeRGBFile((char *) "test.ppm");
     return 0;
 }
-
