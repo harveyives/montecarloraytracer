@@ -48,7 +48,8 @@ public:
     void emit_photons(int n, int depth, vector<double> &points);
 
     vector<Photon> gather_photons(Vertex p, int k, kdtree &tree);
-    Vector approximate_indirect(Ray &ray, Hit &hit);
+
+    Vector approximate_indirect(Ray &ray, Hit &hit, float cone_k, const char *type, kdtree &tree, int neighbours);
 
     void build_kd_tree(vector<double> &points, kdtree &tree, vector<long> &tags);
 

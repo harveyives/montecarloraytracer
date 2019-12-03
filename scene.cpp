@@ -49,7 +49,7 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
 //                                     Material({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
 
     // Spheres
-    Sphere *sphere = new Sphere(Vertex(6, -10, 40), 5, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 0.8));
+    Sphere *sphere = new Sphere(Vertex(6, -6, 36), 5, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 0.8));
     Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, Material({255, 255, 255}, 0.0, 0.8));
     Sphere *sphere3 = new Sphere(Vertex(4, 4, 15), 1, Material({0, 0, 255}, 0.4, 0.6, 2, 1, 0));
     Sphere *sphere4 = new Sphere(Vertex(12, 8, 35), 12, Material({255, 0, 0}, 0, 0.4, 1));
@@ -189,9 +189,9 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
     Hit hit = Hit();
     check_intersections(ray, hit);
 
-    Vector hit_colour = (!photon_mapping) ? hit.what->material.colour : approximate_indirect(ray, hit);
+    Vector hit_colour = (!photon_mapping) ? hit.what->material.colour : approximate_indirect(ray, hit, 1, "direct",
+                                                                                             tree_global, 900);
     colour = colour + hit_colour * ka;
-//    Vector indirect = approximate_indirect(ray, hit);
     if (hit.flag) {
 //        float max_value = max({indirect.x, indirect.y, indirect.z});
 //        Vector scaled_indirect = {255 * indirect.x / max_value, 255 * indirect.y / max_value,
@@ -254,27 +254,29 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
     return colour;
 }
 
-Vector Scene::approximate_indirect(Ray &ray, Hit &hit) {
-    Vector indirect_diffuse = Vector();
-    vector<Photon> local_photons = gather_photons(hit.position, 900, tree_global);
+Vector
+Scene::approximate_indirect(Ray &ray, Hit &hit, float cone_k, const char *type, kdtree &tree, int neighbours) {
+    Vector colour = Vector();
+    vector<Photon> local_photons = gather_photons(hit.position, neighbours, tree);
     float max_dist = -1;
     //calculate distance first
     for (Photon p: local_photons) {
+        if (p.type != type) continue;
         float dist = (p.ray.position - hit.position).magnitude();
         if (dist > max_dist) max_dist = dist;
     }
 
-    float k = 10;
     for (Photon p: local_photons) {
+        if (p.type != type) continue;
         float dist = (p.ray.position - hit.position).magnitude();
-        float cone_filter = 1 - (dist / (k * max_dist));
+        float filter = 1 - (dist / (cone_k * max_dist));
         Vector v = p.ray.direction;
         v.normalise();
         v.negate();
-        indirect_diffuse = indirect_diffuse +
-                           hit.what->material.compute_colour(ray.direction, v, hit.normal, p.colour) * cone_filter;
+
+        colour = colour + hit.what->material.compute_colour(ray.direction, v, hit.normal, p.colour) * filter;
     }
-    Vector colour = indirect_diffuse / ((M_PI * max_dist * max_dist) * (1 - (2 / (3 * k))));
+    colour = colour / ((M_PI * max_dist * max_dist) * (1 - (2 / (3 * cone_k))));
     return colour;
 }
 
@@ -362,7 +364,15 @@ void Scene::emit_photons(int n, int depth, vector<double> &points) {
     for (Light *light : lights) {
         for (int i = 0; i < n; i++) {
             // TODO improve this for other lights
-            Vector direction = Utils::random_direction({0, -1, 0}, M_PI / 2);
+            Object *obj = objects[0];
+
+            Vector to_obj = obj->centre - light->position;
+            float distance = to_obj.magnitude();
+            to_obj.normalise();
+            float cone_angle = atan(obj->radius / distance);
+
+            Vector direction = Utils::random_direction(to_obj, cone_angle);
+//            Vector direction = Utils::random_direction({0, -1, 0}, M_PI / 2);
             Ray ray = Ray(light->position, direction);
             Photon photon = Photon(ray, direction, "direct");
             trace_photon(photon, depth, points, photons_global, tags_global);
@@ -394,16 +404,18 @@ Scene::trace_photon(Photon photon, int depth, vector<double> &points, vector<Pho
             points.push_back(photon.ray.position.y);
             points.push_back(photon.ray.position.z);
         }
-        photon.type = "indirect";
+//        photon.type = "indirect";
 
         // Russian Roulette
         float p = Utils::get_random_number(0, 1);
         if (p <= m.kd) {
             //diffuse
             photon.ray.direction = Utils::random_direction(hit.normal, M_PI);
+            photon.type = "indirect";
             trace_photon(photon, depth - 1, points, photons_global, tags);
         } else if (p <= m.kd + m.ks) {
             hit.normal.reflection(photon.ray.direction, photon.ray.direction);
+            photon.type = "indirect";
             trace_photon(photon, depth - 1, points, photons_global, tags);
         } else if (p <= m.kd + m.ks + m.t) {
             // cos(theta1)
@@ -416,6 +428,7 @@ Scene::trace_photon(Photon photon, int depth, vector<double> &points, vector<Pho
             Vector shift_bias = 0.001 * hit.normal;
             refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
             photon.ray = refraction_ray;
+            photon.type = "caustic";
             trace_photon(photon, depth - 1, points, photons_global, tags);
         } else {
             // absorbed
