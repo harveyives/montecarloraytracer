@@ -39,31 +39,12 @@ public:
 
     Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i);
 
-    Vector get_random_vector_in_direction(Vector direction);
-
-    Vector sample(Vertex query, int k);
-
     void trace_photon(Photon photon, int depth);
 
     void emit_photons(int n, int depth);
 
-    Photon get_nearest_photon(Vertex query);
-
     vector<Photon> gather_photons(Vertex query, int k);
-
-    photon_type get_majority_type(Vertex query);
-
-    Vector gather_photons_with_type(Vertex query, photon_type t);
-
     Vector approximate_indirect(Ray &ray, Hit &hit);
-
-    float BRDF(Hit hit, Vector incoming, Vector view);
-
-    Vector approximate_emmissive(Ray &ray, Hit &hit);
-
-    Vector get_random_point_on_hemisphere(Vector normal);
-
-    Vector get_random_vector();
 
     void build_kd_tree();
 

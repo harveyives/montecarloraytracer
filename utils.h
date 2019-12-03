@@ -42,6 +42,28 @@ public:
         auto n = distribution(random);
         return n;
     }
+
+    static Vector random_direction(Vector direction, float theta) {
+        // Make an orthogonal basis whose third vector is along `direction'
+        Vector b3 = direction;
+        b3.normalise();
+        Vector different = (fabs(b3.x) < 0.5f) ? Vector(1.0f, 0.0f, 0.0f) : Vector(0.0f, 1.0f, 0.0f);
+        Vector b1;
+        b3.cross(different, b1);
+        b1.normalise();
+        Vector b2;
+        b1.cross(b3, b2);
+        //TODO rework this
+        // Pick (x,y,z) randomly around (0,0,1)
+        float z = Utils::get_random_number(cos(theta), 1);
+        float r = sqrt(1.0f - z * z);
+        float phi = Utils::get_random_number(-M_PI, +M_PI);
+        float x = r * cos(phi);
+        float y = r * sin(phi);
+
+        // Construct the vector that has coordinates (x,y,z) in the basis formed by b1, b2, b3
+        return x * b1 + y * b2 + z * b3;
+    }
 };
 
 

@@ -30,10 +30,12 @@ PolyMesh::PolyMesh(char *file, Transform *transform, Material material) : Object
     this->do_construct(file, transform);
 
     //post construct, form bounding sphere
-    Vertex center;
-    float radius;
-    find_bounding_sphere_values(Vertex(), radius);
-    bounding_sphere = new Sphere(center, radius);
+    Vertex c;
+    float r;
+    find_bounding_sphere_values(Vertex(), r);
+    bounding_sphere = new Sphere(c, r);
+    centre = c;
+    radius = r;
 }
 
 void PolyMesh::do_construct(char *file, Transform *transform)
@@ -79,7 +81,7 @@ void PolyMesh::do_construct(char *file, Transform *transform)
     PolyMesh::triangle = triangles;
 }
 
-void PolyMesh::find_bounding_sphere_values(Vertex centre, float radius) {
+void PolyMesh::find_bounding_sphere_values(Vertex c, float r) {
     //Implementation of Jack Ritter's Bounding Sphere algorithm.
 
     //assume any point as min and max
@@ -101,18 +103,18 @@ void PolyMesh::find_bounding_sphere_values(Vertex centre, float radius) {
     float dz = abs(max_limit.z - min_limit.z);
     
     //form initial sphere
-    radius = max({dx, dy, dz}) / 2;
-    centre = (min_limit + max_limit) / 2;
+    r = max({dx, dy, dz}) / 2;
+    c = (min_limit + max_limit) / 2;
 
     for(int i = 0; i < vertex_count; i++) {
-        Vector point_vector = vertex[i] - centre;
+        Vector point_vector = vertex[i] - c;
         float distance = point_vector.magnitude();
 
         //test if point outside sphere
-        if(distance > radius) {
-            float difference = (distance - radius) / 2;
-            radius = radius + difference;
-            centre = centre + difference * point_vector;
+        if (distance > r) {
+            float difference = (distance - r) / 2;
+            r = r + difference;
+            c = c + difference * point_vector;
         }
     }
 }

@@ -19,9 +19,9 @@ void Sphere::intersection(Ray ray, Hit &hit)
 	// offset ray by sphere position
 	// equivalent to transforming ray into local sphere space
 
-	ro.x = ray.position.x - center.x;
-	ro.y = ray.position.y - center.y;
-	ro.z = ray.position.z - center.z;
+    ro.x = ray.position.x - centre.x;
+    ro.y = ray.position.y - centre.y;
+    ro.z = ray.position.z - centre.z;
 
 	float a = (float)ray.direction.dot(ray.direction);
 	float b = (float)(2.0 * ray.direction.dot(ro));
@@ -56,9 +56,9 @@ void Sphere::intersection(Ray ray, Hit &hit)
 		hit.position.x = ray.position.x + t0 * ray.direction.x;
 		hit.position.y = ray.position.y + t0 * ray.direction.y;
 		hit.position.z = ray.position.z + t0 * ray.direction.z;
-		hit.normal.x = hit.position.x - center.x;
-		hit.normal.y = hit.position.y - center.y;
-		hit.normal.z = hit.position.z - center.z;
+        hit.normal.x = hit.position.x - centre.x;
+        hit.normal.y = hit.position.y - centre.y;
+        hit.normal.z = hit.position.z - centre.z;
 		hit.normal.normalise();
 		hit.flag = true;
 
@@ -70,9 +70,9 @@ void Sphere::intersection(Ray ray, Hit &hit)
 	hit.position.x = ray.position.x + t1 * ray.direction.x;
 	hit.position.y = ray.position.y + t1 * ray.direction.y;
 	hit.position.z = ray.position.z + t1 * ray.direction.z;
-	hit.normal.x = hit.position.x - center.x;
-	hit.normal.y = hit.position.y - center.y;
-	hit.normal.z = hit.position.z - center.z;
+    hit.normal.x = hit.position.x - centre.x;
+    hit.normal.y = hit.position.y - centre.y;
+    hit.normal.z = hit.position.z - centre.z;
 	hit.normal.normalise();
 	hit.flag = true;
 

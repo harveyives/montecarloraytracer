@@ -80,21 +80,21 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     objects.push_back(right);
     objects.push_back(back);
     // Adding lights:
-    Light *l1 = new PointLight(Vertex({3, 13, 40}));
+    Light *l1 = new PointLight(Vertex({0, 13, 40}));
     Light *l2 = new PointLight(Vertex({-3, 13, 40}));
     Light *l3 = new PointLight(Vertex({3, 13, 45}));
     Light *l4 = new PointLight(Vertex({-3, 13, 45}));
     // Adding to list
     lights.push_back(l1);
-    lights.push_back(l2);
-    lights.push_back(l3);
-    lights.push_back(l4);
+//    lights.push_back(l2);
+//    lights.push_back(l3);
+//    lights.push_back(l4);
     // TODO cleanup
     if (!photon_mapping) return;
 
     if (generate_photon_map) {
         cout << "Generating new photon map...  " << endl;
-        emit_photons(50000, 50);
+        emit_photons(50000, 4);
         build_kd_tree();
         cout << "DONE" << endl;
         cout << "Writing to file... " << endl;
@@ -371,8 +371,7 @@ void Scene::emit_photons(int n, int depth) {
     for (Light *light : lights) {
         for (int i = 0; i < n; i++) {
             // TODO improve this for other lights
-            Vector direction = get_random_vector_in_direction({0, -1, 0});
-//            Vector direction = get_random_vector();
+            Vector direction = Utils::random_direction({0, -1, 0}, M_PI / 2);
             Ray ray = Ray(light->position, direction);
             Photon photon = Photon(ray, direction, "direct");
             trace_photon(photon, depth);
@@ -408,7 +407,7 @@ void Scene::trace_photon(Photon photon, int depth) {
         float p = Utils::get_random_number(0, 1);
         if (p <= m.kd) {
             //diffuse
-            photon.ray.direction = get_random_vector_in_direction(hit.normal);
+            photon.ray.direction = Utils::random_direction(hit.normal, M_PI);
             photon.colour = photon.colour;
             photon.type = "indirect";
             trace_photon(photon, depth - 1);
@@ -438,27 +437,4 @@ vector<Photon> Scene::gather_photons(Vertex query, int k) {
         local_photons.push_back(photons[output_tags[i]]);
     }
     return local_photons;
-}
-
-Vector Scene::get_random_vector_in_direction(Vector direction) {
-    Vector random = get_random_vector();
-    direction.normalise();
-    random.normalise();
-    if (random.dot(direction) <= 0) random.negate();
-    return random;
-}
-
-Vector Scene::get_random_vector() {
-    Vector random = Vector(Utils::get_random_number(-1, 1), Utils::get_random_number(-1, 1),
-                           Utils::get_random_number(-1, 1));
-    random.normalise();
-    return random;
-}
-
-Vector Scene::get_random_point_on_hemisphere(Vector normal) {
-    Vector direction = get_random_vector();
-
-    if (normal.dot(direction) < 0) direction.negate();
-
-    return direction;
 }

@@ -32,7 +32,7 @@ public:
     PolyMesh(char *file, Transform *transform);
     PolyMesh(char *file, Transform *transform, Material material);
 
-    void find_bounding_sphere_values(Vertex centre, float radius);
+    void find_bounding_sphere_values(Vertex c, float r);
 
     void intersection(Ray ray, Hit &hit) override;
 

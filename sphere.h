@@ -13,14 +13,11 @@
 #include "object.h"
 
 class Sphere : public Object {
-    Vertex center;
-
-    float  radius;
 
 public:
     Sphere(Vertex c, float r) : Sphere(c, r, Material()) {}
     Sphere(Vertex c, float r, Material material) : Object(material) {
-        center = c;
+        centre = c;
         radius = r;
     }
     void intersection(Ray ray, Hit &hit);

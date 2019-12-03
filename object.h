@@ -17,6 +17,9 @@
 class Object {
 public:
     Material material;
+    // used for bounding boxes
+    Vertex centre;
+    float radius;
 
 	Object() = default;
 
