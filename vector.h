@@ -23,7 +23,7 @@ public:
 		z = pz;
 	}
 
-	//Create vector from two points going point a - > b
+    //Create vector from two points_global going point a - > b
     Vector(float ax, float ay, float az, float bx, float by, float bz)
     {
         x = (bx - ax);

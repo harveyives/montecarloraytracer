@@ -22,10 +22,14 @@ public:
     vector<Light *> lights;
     float ka;
     bool photon_mapping;
-    vector<Photon> photons;
-    vector<double> points;
-    vector<long> tags;
-    kdtree kdt;
+    vector<Photon> photons_global;
+    vector<Photon> photons_caustic;
+    vector<double> points_global;
+    vector<double> points_caustic;
+    vector<long> tags_global;
+    vector<long> tags_caustic;
+    kdtree tree_global;
+    kdtree tree_caustic;
 
     Scene(float ambient, bool mapping, bool generate_photon_map);
 
@@ -39,17 +43,19 @@ public:
 
     Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i);
 
-    void trace_photon(Photon photon, int depth);
+    void trace_photon(Photon photon, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
 
-    void emit_photons(int n, int depth);
+    void emit_photons(int n, int depth, vector<double> &points);
 
-    vector<Photon> gather_photons(Vertex query, int k);
+    vector<Photon> gather_photons(Vertex p, int k, kdtree &tree);
     Vector approximate_indirect(Ray &ray, Hit &hit);
 
-    void build_kd_tree();
+    void build_kd_tree(vector<double> &points, kdtree &tree, vector<long> &tags);
 
-    void save_map_to_file();
+    static void
+    save_map_to_file(kdtree &tree, const char *tree_filename, vector<Photon> &photons, const char *photons_filename);
 
-    void load_map_from_file();
+    void load_map_from_file(kdtree &tree, const char *tree_filename, vector<Photon> &photons,
+                            const char *photons_filename);
 };
 #endif //CODE_SCENE_H

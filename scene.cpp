@@ -26,6 +26,7 @@
 #include "utils.h"
 
 using namespace alglib;
+
 Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     ka = ambient;
     photon_mapping = mapping;
@@ -48,7 +49,7 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
 //                                     Material({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
 
     // Spheres
-    Sphere *sphere = new Sphere(Vertex(6, -10, 40), 5, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 0));
+    Sphere *sphere = new Sphere(Vertex(6, -10, 40), 5, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 0.8));
     Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, Material({255, 255, 255}, 0.0, 0.8));
     Sphere *sphere3 = new Sphere(Vertex(4, 4, 15), 1, Material({0, 0, 255}, 0.4, 0.6, 2, 1, 0));
     Sphere *sphere4 = new Sphere(Vertex(12, 8, 35), 12, Material({255, 0, 0}, 0, 0.4, 1));
@@ -70,7 +71,7 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
 //    objects.push_back(pyramid);
 
     objects.push_back(sphere);
-    objects.push_back(sphere_yellow);
+//    objects.push_back(sphere_yellow);
 //        objects.push_back(sphere3);
 //        objects.push_back(sphere4);
 
@@ -94,35 +95,34 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
 
     if (generate_photon_map) {
         cout << "Generating new photon map...  " << endl;
-        emit_photons(50000, 4);
-        build_kd_tree();
+        emit_photons(100000, 4, points_global);
+        build_kd_tree(points_global, tree_global, tags_global);
         cout << "DONE" << endl;
         cout << "Writing to file... " << endl;
-        save_map_to_file();
+        save_map_to_file(tree_global, "tree_global", photons_global, "photons_global");
         cout << "DONE" << endl;
     } else {
-        cout << "Loading pre-built map... " << endl;
-        load_map_from_file();
+        cout << "Loading pre-built maps... " << endl;
+        load_map_from_file(tree_global, "tree_global", photons_global, "photons_global");
         cout << "DONE" << endl;
     }
 
     return;
 }
 
-void Scene::load_map_from_file() {
-    // TODO rename these and refacor
-    ifstream file("kdtree");
+void Scene::load_map_from_file(kdtree &tree, const char *tree_filename, vector<Photon> &photons,
+                               const char *photons_filename) {
+    ifstream tree_file(tree_filename);
     stringstream buffer;
+    buffer << tree_file.rdbuf();
+    tree_file.close();
 
-    buffer << file.rdbuf();
+    //deserialise file into tree
+    kdtreeunserialize(buffer, tree);
 
-    file.close();
-    kdtreeunserialize(buffer, kdt);
-
-    ifstream ifs("photons", ios::in);
-
+    ifstream photons_file(photons_filename, ios::in);
     string line;
-    while (getline(ifs, line)) {
+    while (getline(photons_file, line)) {
         vector<string> photon_line = Utils::split_string(line);
         Vector colour = Vector(stof(photon_line[0]), stof(photon_line[1]), stof(photon_line[2]));
         Vector direction = Vector(stof(photon_line[3]), stof(photon_line[4]), stof(photon_line[5]));
@@ -133,34 +133,31 @@ void Scene::load_map_from_file() {
     }
 }
 
-void Scene::save_map_to_file() {
+void Scene::save_map_to_file(kdtree &tree, const char *tree_filename, vector<Photon> &photons,
+                             const char *photons_filename) {
     stringstream ss;
-    kdtreeserialize(kdt, ss);
-    ofstream outFile;
-    outFile.open("kdtree", ios::out);
-    outFile << ss.str();
-    outFile.close();
+    kdtreeserialize(tree, ss);
+    ofstream tree_file;
+    tree_file.open(tree_filename, ios::out);
+    tree_file << ss.str();
+    tree_file.close();
 
-    ifstream file("kdtree");
-    stringstream buffer;
-
-    buffer << file.rdbuf();
-    file.close();
-
-    ofstream ofs("photons", ios::out);
-
+    //serialise photon
+    ofstream photons_file(photons_filename, ios::out);
     for (size_t i = 0; i < photons.size(); i++) {
-        ofs << photons[i].colour.x << "\t" << photons[i].colour.y << "\t" << photons[i].colour.z << "\t"
-            << photons[i].ray.direction.x << "\t" << photons[i].ray.direction.y << "\t"
-            << photons[i].ray.direction.z << "\t"
-            << photons[i].ray.position.x << "\t" << photons[i].ray.position.y << "\t" << photons[i].ray.position.z
-            << "\t"
-            << photons[i].type << "\r\n";
+        photons_file << photons[i].colour.x << "\t" << photons[i].colour.y << "\t" << photons[i].colour.z << "\t"
+                     << photons[i].ray.direction.x << "\t" << photons[i].ray.direction.y << "\t"
+                     << photons[i].ray.direction.z << "\t"
+                     << photons[i].ray.position.x << "\t" << photons[i].ray.position.y << "\t"
+                     << photons[i].ray.position.z
+                     << "\t"
+                     << photons[i].type << "\r\n";
     }
-    ofs.close();
+    photons_file.close();
 }
 
-void Scene::build_kd_tree() {
+void Scene::build_kd_tree(vector<double> &points, kdtree &tree, vector<long> &tags) {
+    // converting points so that they can be stored in tree through ALGLIB
     real_2d_array matrix;
     matrix.attach_to_ptr(points.size() / 3, 3, points.data());
     ae_int_t nx = 3;
@@ -169,7 +166,7 @@ void Scene::build_kd_tree() {
     real_1d_array x;
     integer_1d_array input;
     input.setcontent(points.size() / 3, tags.data());
-    kdtreebuildtagged(matrix, input, nx, ny, normtype, kdt);
+    kdtreebuildtagged(matrix, input, nx, ny, normtype, tree);
 }
 
 Hit Scene::check_intersections(Ray &ray, Hit &hit) {
@@ -201,9 +198,6 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 //                                  255 * indirect.z / max_value};
 //        colour = colour + scaled_indirect;
 //        // TODO change these ugly pointers
-//
-//        Vector hit_colour = hit.what->material.colour;
-//
         for (Light *light : lights) {
             // if area shaded
             if (object_occluded(objects, hit.position, light->position)) {
@@ -262,16 +256,15 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 
 Vector Scene::approximate_indirect(Ray &ray, Hit &hit) {
     Vector indirect_diffuse = Vector();
-    vector<Photon> local_photons = gather_photons(hit.position, 900);
+    vector<Photon> local_photons = gather_photons(hit.position, 900, tree_global);
     float max_dist = -1;
     //calculate distance first
     for (Photon p: local_photons) {
-//        if (p.type != "indirect") continue;
         float dist = (p.ray.position - hit.position).magnitude();
         if (dist > max_dist) max_dist = dist;
     }
 
-    float k = 2;
+    float k = 10;
     for (Photon p: local_photons) {
         float dist = (p.ray.position - hit.position).magnitude();
         float cone_filter = 1 - (dist / (k * max_dist));
@@ -281,8 +274,6 @@ Vector Scene::approximate_indirect(Ray &ray, Hit &hit) {
         indirect_diffuse = indirect_diffuse +
                            hit.what->material.compute_colour(ray.direction, v, hit.normal, p.colour) * cone_filter;
     }
-
-//    Vector colour = indirect_diffuse;
     Vector colour = indirect_diffuse / ((M_PI * max_dist * max_dist) * (1 - (2 / (3 * k))));
     return colour;
 }
@@ -367,23 +358,24 @@ Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index
     return refracted_ray;
 }
 
-void Scene::emit_photons(int n, int depth) {
+void Scene::emit_photons(int n, int depth, vector<double> &points) {
     for (Light *light : lights) {
         for (int i = 0; i < n; i++) {
             // TODO improve this for other lights
             Vector direction = Utils::random_direction({0, -1, 0}, M_PI / 2);
             Ray ray = Ray(light->position, direction);
             Photon photon = Photon(ray, direction, "direct");
-            trace_photon(photon, depth);
+            trace_photon(photon, depth, points, photons_global, tags_global);
         }
-        // scale by number of photons from light
-        for (Photon p: photons) {
+        // scale by number of photons_global from light
+        for (Photon p: photons_global) {
             p.colour = p.colour / n;
         }
     }
 }
 
-void Scene::trace_photon(Photon photon, int depth) {
+void
+Scene::trace_photon(Photon photon, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags) {
     if (depth <= 0) return;
 
     Hit hit = Hit();
@@ -402,39 +394,50 @@ void Scene::trace_photon(Photon photon, int depth) {
             points.push_back(photon.ray.position.y);
             points.push_back(photon.ray.position.z);
         }
+        photon.type = "indirect";
 
         // Russian Roulette
         float p = Utils::get_random_number(0, 1);
         if (p <= m.kd) {
             //diffuse
             photon.ray.direction = Utils::random_direction(hit.normal, M_PI);
-            photon.colour = photon.colour;
-            photon.type = "indirect";
-            trace_photon(photon, depth - 1);
+            trace_photon(photon, depth - 1, points, photons_global, tags);
         } else if (p <= m.kd + m.ks) {
             hit.normal.reflection(photon.ray.direction, photon.ray.direction);
-            photon.colour = photon.colour;
-            photon.type = "indirect";
-            trace_photon(photon, depth - 1);
+            trace_photon(photon, depth - 1, points, photons_global, tags);
+        } else if (p <= m.kd + m.ks + m.t) {
+            // cos(theta1)
+            float cos_i = max(-1.f, min(photon.ray.direction.dot(hit.normal), 1.f));
+            Ray refraction_ray = Ray();
+            refraction_ray.direction = refract(photon.ray.direction, hit.normal, hit.what->material.ior, cos_i);
+            refraction_ray.direction.normalise();
+
+            // Remove speckles TODO reuse this in shadow
+            Vector shift_bias = 0.001 * hit.normal;
+            refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
+            photon.ray = refraction_ray;
+            trace_photon(photon, depth - 1, points, photons_global, tags);
         } else {
+            // absorbed
             return;
         }
     }
 }
 
-vector<Photon> Scene::gather_photons(Vertex query, int k) {
-    vector<double> point = {query.x, query.y, query.z};
+vector<Photon> Scene::gather_photons(Vertex p, int k, kdtree &tree) {
+    vector<double> point = {p.x, p.y, p.z};
     real_1d_array x;
     x.setcontent(3, point.data());
 
-    kdtreequeryknn(kdt, x, k);
+    kdtreequeryknn(tree, x, k);
     real_2d_array r = "[[]]";
     integer_1d_array output_tags = "[]";
-    kdtreequeryresultstags(kdt, output_tags);
+    kdtreequeryresultstags(tree, output_tags);
 
     vector<Photon> local_photons;
+    local_photons.reserve(k);
     for (int i = 0; i < k; i++) {
-        local_photons.push_back(photons[output_tags[i]]);
+        local_photons.push_back(photons_global[output_tags[i]]);
     }
     return local_photons;
 }
