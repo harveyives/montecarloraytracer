@@ -448,7 +448,7 @@ count even for single-threaded GPLed ALGLIB).
 #endif
         AE_CRITICAL_ASSERT(ncores >= 1);
 
-        /* map nworkers to its effective value */
+        /* matrix nworkers to its effective value */
         if (nworkers >= 1)
             return nworkers > ncores ? ncores : nworkers;
         return ncores + nworkers >= 1 ? ncores + nworkers : 1;

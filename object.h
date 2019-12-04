@@ -9,6 +9,7 @@
 #ifndef _OBJECT_H_
 #define _OBJECT_H_
 
+#include <cfloat>
 #include "ray.h"
 #include "hit.h"
 #include "vector.h"
@@ -16,14 +17,20 @@
 
 class Object {
 public:
-    Material material;
+    Material *material;
     // used for bounding boxes
     Vertex centre;
+    long double min_limit_x = DBL_MAX;
+    long double min_limit_y = DBL_MAX;
+    long double min_limit_z = DBL_MAX;
+    long double max_limit_x = DBL_MIN;
+    long double max_limit_y = DBL_MIN;
+    long double max_limit_z = DBL_MIN;
     float radius;
 
 	Object() = default;
 
-	Object(Material m) : material(Vector(), 0, 0, 0, false, false) {
+    Object(Material *m) {
 	    material = m;
 	}
 	

@@ -9,8 +9,9 @@
 #include "colour.h"
 
 class Material {
-public:
+protected:
     Vector colour;
+public:
     float ks;
     float kd;
     float ior;
@@ -27,7 +28,7 @@ public:
         t = transparent;
     }
 
-    Vector compute_colour(Vector &view, Vector &light_direction, Vector &normal, Vector base_colour) {
+    virtual Vector compute_light_colour(Vector &view, Vector &light_direction, Vector &normal, Vector base_colour) {
         Vector result = Vector();
 
         // diffuse
@@ -39,11 +40,10 @@ public:
         result = result + base_colour * diffuse * kd;
 
         result = result + get_specular_component(view, light_direction, normal, base_colour);
-
         return result;
     }
 
-    Vector get_specular_component(Vector &view, Vector &light_direction, Vector &normal, Vector &base_colour) {
+    virtual Vector get_specular_component(Vector &view, Vector &light_direction, Vector &normal, Vector &base_colour) {
         Vector result;
         Vector reflection = Vector();
         normal.reflection(light_direction, reflection);
@@ -55,14 +55,8 @@ public:
 
         result = result + base_colour * pow(specular, 128) * ks;
         return result;
-    }
+    };
 
-    Vector compute_colour(Vector view, Vector &light_direction, Vector &normal) {
-        return compute_colour(view, light_direction, normal, colour);
-    }
-
-    static Material set_colour(Vector c) {
-        return {c};
-    }
+    virtual Vector compute_base(Hit &hit) = 0;
 };
 #endif //CODE_MATERIAL_H

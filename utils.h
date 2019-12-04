@@ -35,7 +35,7 @@ public:
         return words;
     }
 
-    static float get_random_number(int min, int max) {
+    static float get_random_number(float min, float max) {
         random_device device;
         mt19937 random(device());
         uniform_real_distribution<> distribution(min, max);
@@ -44,25 +44,32 @@ public:
     }
 
     static Vector random_direction(Vector direction, float theta) {
-        // Make an orthogonal basis whose third vector is along `direction'
-        Vector b3 = direction;
-        b3.normalise();
-        Vector different = (fabs(b3.x) < 0.5f) ? Vector(1.0f, 0.0f, 0.0f) : Vector(0.0f, 1.0f, 0.0f);
-        Vector b1;
-        b3.cross(different, b1);
-        b1.normalise();
-        Vector b2;
-        b1.cross(b3, b2);
-        //TODO rework this
-        // Pick (x,y,z) randomly around (0,0,1)
-        float z = Utils::get_random_number(cos(theta), 1);
-        float r = sqrt(1.0f - z * z);
-        float phi = Utils::get_random_number(-M_PI, +M_PI);
-        float x = r * cos(phi);
-        float y = r * sin(phi);
+        // make basis vectors based on direction
+        Vector basis_z = direction;
+        basis_z.normalise();
 
-        // Construct the vector that has coordinates (x,y,z) in the basis formed by b1, b2, b3
-        return x * b1 + y * b2 + z * b3;
+        Vector basis_x;
+        Vector different = (0.5 > fabs(basis_z.x)) ? Vector(1, 0, 0) : Vector(0, 1, 0);
+        basis_z.cross(different, basis_x);
+        basis_x.normalise();
+
+        Vector basis_y;
+        basis_x.cross(basis_z, basis_y);
+
+        // height
+        float z = Utils::get_random_number(cos(theta), 1);
+
+        // rotation
+        float phi = Utils::get_random_number(-M_PI, +M_PI);
+        float x = sqrt(1 - z * z) * cos(phi);
+        float y = sqrt(1 - z * z) * sin(phi);
+
+        // combine
+        return x * basis_x + y * basis_y + z * basis_z;
+    }
+
+    static float lerp(double t, double a, double b) {
+        return a + t * (b - a);
     }
 };
 
