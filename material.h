@@ -31,7 +31,7 @@ public:
         Vector result = Vector();
 
         // diffuse
-        float diffuse = light_direction.dot(normal);
+        float diffuse = normal.dot(light_direction);
         //thus self occlusion
         if (diffuse < 0) {
             return result;
@@ -46,7 +46,7 @@ public:
             specular = 0.0;
         }
 
-        result = result + base_colour * pow(specular, 128) * ks;
+        result = result + base_colour * pow(specular, 10) * ks;
         return result;
     }
 

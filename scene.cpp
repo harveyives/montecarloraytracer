@@ -40,19 +40,19 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
             0, 0, 1.5, 1);
     PolyMesh *pm = new PolyMesh((char *) "teapot.ply", transform, Material({0, 255, 0}, 0.8, 0.1, 1, 0.4, 0));
 //
-//    Transform *transform_pyramid = new Transform(
-//            5, 0, 0, -2.5,
-//            0, 0, 5, 0,
-//            0, 5, 0, 20.0,
-//            0, 0, 5, 1);
-//    PolyMesh *pyramid = new PolyMesh((char *) "cube.ply", transform_pyramid,
-//                                     Material({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
+    Transform *transform_pyramid = new Transform(
+            5, 0, 0, -2.5,
+            0, 0, 5, 0,
+            0, 5, 0, 20.0,
+            0, 0, 5, 1);
+    PolyMesh *pyramid = new PolyMesh((char *) "cube.ply", transform_pyramid,
+                                     Material({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
 
     // Spheres
-    Sphere *sphere = new Sphere(Vertex(6, -6, 36), 5, Material({255, 255, 255}, 0.1, 0.1, 1.7, 1, 0.8));
-    Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, Material({255, 255, 255}, 0.0, 0.8));
-    Sphere *sphere3 = new Sphere(Vertex(4, 4, 15), 1, Material({0, 0, 255}, 0.4, 0.6, 2, 1, 0));
-    Sphere *sphere4 = new Sphere(Vertex(12, 8, 35), 12, Material({255, 0, 0}, 0, 0.4, 1));
+    Sphere *sphere = new Sphere(Vertex(6, -6, 36), 5, Material({255, 255, 255}, 0.1, 0.0, 1.7, 1, 0));
+    Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, Material({255, 255, 255}, 0.0, 0.9));
+    Sphere *sphere3 = new Sphere(Vertex(-3, -8, 41), 5, Material({255, 255, 255}, 0.0, 0.8));
+    Sphere *sphere4 = new Sphere(Vertex(3, -8, 39), 5, Material({255, 255, 255}, 0.0, 0.8));
 
 
     // Cornell Box
@@ -70,10 +70,10 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
 //        objects.push_back(pm);
 //    objects.push_back(pyramid);
 
-    objects.push_back(sphere);
+//    objects.push_back(sphere);
 //    objects.push_back(sphere_yellow);
-//        objects.push_back(sphere3);
-//        objects.push_back(sphere4);
+    objects.push_back(sphere3);
+    objects.push_back(sphere4);
 
     objects.push_back(top);
     objects.push_back(bottom);
@@ -85,11 +85,13 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     Light *l2 = new PointLight(Vertex({-3, 13, 40}));
     Light *l3 = new PointLight(Vertex({3, 13, 45}));
     Light *l4 = new PointLight(Vertex({-3, 13, 45}));
+    Light *l5 = new PointLight(Vertex({10, 10, 0}));
     // Adding to list
-    lights.push_back(l1);
+//    lights.push_back(l1);
 //    lights.push_back(l2);
 //    lights.push_back(l3);
 //    lights.push_back(l4);
+    lights.push_back(l5);
     // TODO cleanup
     if (!photon_mapping) return;
 
@@ -189,14 +191,9 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
     Hit hit = Hit();
     check_intersections(ray, hit);
 
-    Vector hit_colour = (!photon_mapping) ? hit.what->material.colour : approximate_indirect(ray, hit, 1, "direct",
+    Vector hit_colour = (!photon_mapping) ? hit.what->material.colour : approximate_indirect(ray, hit, 5, "direct",
                                                                                              tree_global, 900);
-    colour = colour + hit_colour * ka;
     if (hit.flag) {
-//        float max_value = max({indirect.x, indirect.y, indirect.z});
-//        Vector scaled_indirect = {255 * indirect.x / max_value, 255 * indirect.y / max_value,
-//                                  255 * indirect.z / max_value};
-//        colour = colour + scaled_indirect;
 //        // TODO change these ugly pointers
         for (Light *light : lights) {
             // if area shaded
@@ -214,9 +211,14 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
                 specular = 0.0;
             }
 
-            colour = colour + hit_colour * pow(specular, 128) * hit.what->material.ks;
-//            colour = colour + hit.what->material.compute_colour(ray.direction, light_direction, hit.normal,
-//                                                                hit_colour);
+//            colour = colour + hit_colour * pow(specular, 128) * hit.what->material.ks;
+
+            Vector v = light_direction;
+            v.normalise();
+            Vector u = ray.direction;
+            u.normalise();
+            colour = colour + hit.what->material.compute_colour(u, v, hit.normal,
+                                                                hit_colour);
         }
         // multiply by how transparent it is
         colour = colour + hit_colour * ka * (1 - hit.what->material.t);
@@ -261,13 +263,13 @@ Scene::approximate_indirect(Ray &ray, Hit &hit, float cone_k, const char *type, 
     float max_dist = -1;
     //calculate distance first
     for (Photon p: local_photons) {
-        if (p.type != type) continue;
+//        if (p.type != type) continue;
         float dist = (p.ray.position - hit.position).magnitude();
         if (dist > max_dist) max_dist = dist;
     }
 
     for (Photon p: local_photons) {
-        if (p.type != type) continue;
+//        if (p.type != type) continue;
         float dist = (p.ray.position - hit.position).magnitude();
         float filter = 1 - (dist / (cone_k * max_dist));
         Vector v = p.ray.direction;
@@ -371,8 +373,8 @@ void Scene::emit_photons(int n, int depth, vector<double> &points) {
             to_obj.normalise();
             float cone_angle = atan(obj->radius / distance);
 
-            Vector direction = Utils::random_direction(to_obj, cone_angle);
-//            Vector direction = Utils::random_direction({0, -1, 0}, M_PI / 2);
+//            Vector direction = Utils::random_direction(to_obj, cone_angle);
+            Vector direction = Utils::random_direction({0, -1, 0}, M_PI / 2);
             Ray ray = Ray(light->position, direction);
             Photon photon = Photon(ray, direction, "direct");
             trace_photon(photon, depth, points, photons_global, tags_global);
