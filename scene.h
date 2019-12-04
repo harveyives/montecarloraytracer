@@ -47,7 +47,7 @@ public:
 
     void emit_photons(int n, int depth, vector<double> &points);
 
-    vector<Photon> gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons);
+    vector<Photon *> gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons);
 
     Vector estimate_radiance(Ray &ray, Hit &hit, float cone_k, const char *type, kdtree &tree, int neighbours,
                              vector<Photon> &photons);

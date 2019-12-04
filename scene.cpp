@@ -100,7 +100,7 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
 
     if (generate_photon_map) {
         cout << "Generating new photon map...  " << endl;
-        emit_photons(100000, 8, points_global);
+        emit_photons(200000, 50, points_global);
         build_kd_tree(points_global, tree_global, tags_global);
 //        build_kd_tree(points_caustic, tree_caustic, tags_caustic);
         cout << "DONE" << endl;
@@ -198,11 +198,10 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
     Vector base_colour;
     if (photon_mapping) {
 //        base_colour = estimate_radiance(ray, hit, 5, "direct", tree_caustic, 900, photons_caustic);
-        base_colour = estimate_radiance(ray, hit, 5, "direct", tree_global, 900, photons_global);
+        base_colour = estimate_radiance(ray, hit, 5, "indirect", tree_global, 900, photons_global);
     } else {
         base_colour = hit.what->material.colour;
     }
-
     if (hit.flag) {
 //        // TODO change these ugly pointers
         for (Light *light : lights) {
@@ -215,9 +214,14 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
             light_direction.normalise();
 
             if (photon_mapping) {
-                colour = colour + hit.what->material.get_specular_component(ray.direction, light_direction, hit.normal,
+                Vector v = light_direction;
+                v.negate();
+                Vector u = ray.direction;
+                u.negate();
+                colour = colour + hit.what->material.get_specular_component(u, v, hit.normal,
                                                                             base_colour);
             } else {
+
                 colour = colour + hit.what->material.compute_colour(ray.direction, light_direction, hit.normal,
                                                                     base_colour);
             }
@@ -227,7 +231,7 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
         colour = colour + base_colour * ka * (1 - hit.what->material.t);
         colour = colour / lights.size();
 
-
+//        return colour;
         // cos(theta1)
         float cos_i = max(-1.f, min(ray.direction.dot(hit.normal), 1.f));
         // compute kr by Fresnel only if transparent
@@ -263,29 +267,27 @@ Vector
 Scene::estimate_radiance(Ray &ray, Hit &hit, float cone_k, const char *type, kdtree &tree, int neighbours,
                          vector<Photon> &photons) {
     Vector colour = Vector();
-    vector<Photon> local_photons = gather_photons(hit.position, neighbours, tree, photons);
+    vector<Photon *> local_photons = gather_photons(hit.position, neighbours, tree, photons);
     float max_dist = -1;
     //calculate distance first
-    for (Photon p: local_photons) {
+    for (Photon *p: local_photons) {
 //        if (p.type != type) continue;
-        float dist = (p.ray.position - hit.position).magnitude();
+        float dist = (p->ray.position - hit.position).magnitude();
         if (dist > max_dist) max_dist = dist;
     }
 
-    for (Photon p: local_photons) {
+    for (Photon *p: local_photons) {
 //        if (p.type != type) continue;
-        float dist = (p.ray.position - hit.position).magnitude();
+        float dist = (p->ray.position - hit.position).magnitude();
         float filter = 1 - (dist / (cone_k * max_dist));
-        Vector v = p.ray.direction;
+        Vector v = p->ray.direction;
         v.normalise();
         v.negate();
 
-        colour.x = colour.x + p.colour.x * hit.what->material.compute_colour(ray.direction, v, hit.normal,
-                                                                             hit.what->material.colour).x * filter;
-        colour.y = colour.y + p.colour.y * hit.what->material.compute_colour(ray.direction, v, hit.normal,
-                                                                             hit.what->material.colour).y * filter;
-        colour.z = colour.z + p.colour.z * hit.what->material.compute_colour(ray.direction, v, hit.normal,
-                                                                             hit.what->material.colour).z * filter;
+        Vector u = ray.direction;
+        u.negate();
+        colour = colour + p->colour * hit.what->material.compute_colour(u, v, hit.normal,
+                                                                        hit.what->material.colour) * filter;
     }
     colour = colour / ((M_PI * max_dist * max_dist) * (1 - (2 / (3 * cone_k))));
     return colour;
@@ -434,40 +436,35 @@ Scene::trace_photon(Photon photon, int depth, vector<double> &points, vector<Pho
             //diffuse
             photon.ray.direction = Utils::random_direction(hit.normal, M_PI);
             photon.type = "indirect";
-            Vector col;
-            col.x = photon.colour.x * hit.what->material.colour.x / m.kd;
-            col.y = photon.colour.y * hit.what->material.colour.y / m.kd;
-            col.z = photon.colour.z * hit.what->material.colour.z / m.kd;
+            Vector col = m.colour / m.kd;
             Photon test = Photon(photon.ray, col, "indirect");
-            trace_photon(photon, depth - 1, points, photons, tags);
+            trace_photon(test, depth - 1, points, photons, tags);
         } else if (p <= m.kd + m.ks) {
             hit.normal.reflection(photon.ray.direction, photon.ray.direction);
             photon.type = "indirect";
 
-            Vector col;
-            col.x = photon.colour.x * hit.what->material.colour.x / m.ks;
-            col.y = photon.colour.y * hit.what->material.colour.y / m.ks;
-            col.z = photon.colour.z * hit.what->material.colour.z / m.ks;
-            Photon test = Photon(photon.ray, col, "indirect");
-            trace_photon(photon, depth - 1, points, photons, tags);
-        } else if (p <= m.kd + m.ks + m.t) {
-            Vector col;
-            col.x = photon.colour.x * hit.what->material.colour.x / m.t;
-            col.y = photon.colour.y * hit.what->material.colour.y / m.t;
-            col.z = photon.colour.z * hit.what->material.colour.z / m.t;
-            Photon test = Photon(photon.ray, col, "indirect");
-            // cos(theta1)
-            float cos_i = max(-1.f, min(photon.ray.direction.dot(hit.normal), 1.f));
-            Ray refraction_ray = Ray();
-            refraction_ray.direction = refract(photon.ray.direction, hit.normal, hit.what->material.ior, cos_i);
-            refraction_ray.direction.normalise();
 
-            // Remove speckles TODO reuse this in shadow
-            Vector shift_bias = 0.001 * hit.normal;
-            refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
-            photon.ray = refraction_ray;
-            photon.type = "caustic";
-            trace_photon(photon, depth - 1, points, photons, tags);
+            Vector col = m.colour / m.ks;
+            Photon test = Photon(photon.ray, col, "indirect");
+            trace_photon(test, depth - 1, points, photons, tags);
+        } else if (p <= m.kd + m.ks + m.t) {
+//            Vector col;
+//            col.x = photon.colour.x * hit.what->material.colour.x / m.t;
+//            col.y = photon.colour.y * hit.what->material.colour.y / m.t;
+//            col.z = photon.colour.z * hit.what->material.colour.z / m.t;
+//            Photon test = Photon(photon.ray, col, "indirect");
+//            // cos(theta1)
+//            float cos_i = max(-1.f, min(photon.ray.direction.dot(hit.normal), 1.f));
+//            Ray refraction_ray = Ray();
+//            refraction_ray.direction = refract(photon.ray.direction, hit.normal, hit.what->material.ior, cos_i);
+//            refraction_ray.direction.normalise();
+//
+//            // Remove speckles TODO reuse this in shadow
+//            Vector shift_bias = 0.001 * hit.normal;
+//            refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
+//            photon.ray = refraction_ray;
+//            photon.type = "caustic";
+//            trace_photon(photon, depth - 1, points, photons, tags);
         } else {
             // absorbed
             return;
@@ -475,7 +472,7 @@ Scene::trace_photon(Photon photon, int depth, vector<double> &points, vector<Pho
     }
 }
 
-vector<Photon> Scene::gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons) {
+vector<Photon *> Scene::gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons) {
     vector<double> point = {p.x, p.y, p.z};
     real_1d_array x;
     x.setcontent(3, point.data());
@@ -485,10 +482,9 @@ vector<Photon> Scene::gather_photons(Vertex p, int k, kdtree &tree, vector<Photo
     integer_1d_array output_tags = "[]";
     kdtreequeryresultstags(tree, output_tags);
 
-    vector<Photon> local_photons;
-    local_photons.reserve(k);
+    vector<Photon *> local_photons;
     for (int i = 0; i < k; i++) {
-        local_photons.push_back(photons[output_tags[i]]);
+        local_photons.push_back(&photons[output_tags[i]]);
     }
     return local_photons;
 }

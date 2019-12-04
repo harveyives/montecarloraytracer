@@ -96,6 +96,10 @@ public:
         return {s * x, s * y, s * z};
     }
 
+    Vector operator*(Vector v) {
+        return {v.x * x, v.y * y, v.z * z};
+    }
+
     Vector operator / (float s)
     {
         return {x / s , y / s, z / s};
