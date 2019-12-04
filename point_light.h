@@ -9,8 +9,11 @@
 
 class PointLight : public Light {
 public:
-    PointLight(Vertex p) {
+    PointLight(Vertex p) : PointLight(p, Vector(255, 255, 255)) {}
+
+    PointLight(Vertex p, Vector i) {
         position = p;
+        intensity = i;
     }
 
     Vector get_light_direction(Vertex p) override {

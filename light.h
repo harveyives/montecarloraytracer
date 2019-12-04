@@ -11,6 +11,7 @@ class Light {
 public:
     Vertex position;
     Vector direction;
+    Vector intensity;
 
     virtual Vector get_light_direction(Vertex point) = 0;
 };
