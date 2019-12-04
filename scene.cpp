@@ -49,7 +49,7 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
                                      Material({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
 
     // Spheres
-    Sphere *sphere = new Sphere(Vertex(6, -6, 36), 5, Material({255, 255, 255}, 0.1, 0.0, 1.7, 1, 0));
+    Sphere *sphere = new Sphere(Vertex(6, -6, 36), 5, Material({255, 255, 255}, 0.1, 0.0, 1.7, 1, 0.99));
     Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, Material({255, 255, 255}, 0.0, 0.9));
     Sphere *sphere3 = new Sphere(Vertex(-3, -8, 41), 5, Material({255, 255, 255}, 0.0, 0.8));
     Sphere *sphere4 = new Sphere(Vertex(3, -8, 39), 5, Material({255, 255, 255}, 0.0, 0.8));
@@ -87,11 +87,11 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     Light *l4 = new PointLight(Vertex({-3, 13, 45}));
     Light *l5 = new PointLight(Vertex({10, 10, 0}));
     // Adding to list
-//    lights.push_back(l1);
+    lights.push_back(l1);
 //    lights.push_back(l2);
 //    lights.push_back(l3);
 //    lights.push_back(l4);
-    lights.push_back(l5);
+//    lights.push_back(l5);
     // TODO cleanup
     if (!photon_mapping) return;
 
@@ -99,6 +99,7 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
         cout << "Generating new photon map...  " << endl;
         emit_photons(100000, 4, points_global);
         build_kd_tree(points_global, tree_global, tags_global);
+        build_kd_tree(points_caustic, tree_caustic, tags_caustic);
         cout << "DONE" << endl;
         cout << "Writing to file... " << endl;
         save_map_to_file(tree_global, "tree_global", photons_global, "photons_global");
@@ -191,8 +192,14 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
     Hit hit = Hit();
     check_intersections(ray, hit);
 
-    Vector hit_colour = (!photon_mapping) ? hit.what->material.colour : approximate_indirect(ray, hit, 5, "direct",
-                                                                                             tree_global, 900);
+    Vector base_colour;
+    if (photon_mapping) {
+        base_colour = estimate_radiance(ray, hit, 5, "direct", tree_global, 900) +
+                      estimate_radiance(ray, hit, 5, "direct", tree_caustic, 900);
+    } else {
+        base_colour = hit.what->material.colour;
+    }
+
     if (hit.flag) {
 //        // TODO change these ugly pointers
         for (Light *light : lights) {
@@ -203,25 +210,18 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
             //get light direction based on point if point light, otherwise get directional light
             Vector light_direction = light->get_light_direction(hit.position);
             light_direction.normalise();
-            Vector reflection = Vector();
-            hit.normal.reflection(light_direction, reflection);
-            float specular = reflection.dot(ray.direction);
-            // thus no contribution
-            if (specular < 0) {
-                specular = 0.0;
+
+            if (photon_mapping) {
+                colour = colour + hit.what->material.get_specular_component(ray.direction, light_direction, hit.normal,
+                                                                            base_colour);
+            } else {
+                colour = colour + hit.what->material.compute_colour(ray.direction, light_direction, hit.normal,
+                                                                    base_colour);
             }
 
-//            colour = colour + hit_colour * pow(specular, 128) * hit.what->material.ks;
-
-            Vector v = light_direction;
-            v.normalise();
-            Vector u = ray.direction;
-            u.normalise();
-            colour = colour + hit.what->material.compute_colour(u, v, hit.normal,
-                                                                hit_colour);
         }
         // multiply by how transparent it is
-        colour = colour + hit_colour * ka * (1 - hit.what->material.t);
+        colour = colour + base_colour * ka * (1 - hit.what->material.t);
         colour = colour / lights.size();
 
 
@@ -257,7 +257,7 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 }
 
 Vector
-Scene::approximate_indirect(Ray &ray, Hit &hit, float cone_k, const char *type, kdtree &tree, int neighbours) {
+Scene::estimate_radiance(Ray &ray, Hit &hit, float cone_k, const char *type, kdtree &tree, int neighbours) {
     Vector colour = Vector();
     vector<Photon> local_photons = gather_photons(hit.position, neighbours, tree);
     float max_dist = -1;
@@ -365,6 +365,17 @@ Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index
 void Scene::emit_photons(int n, int depth, vector<double> &points) {
     for (Light *light : lights) {
         for (int i = 0; i < n; i++) {
+            Vector direction = Utils::random_direction({0, -1, 0}, M_PI / 2);
+            Ray ray = Ray(light->position, direction);
+            Photon photon = Photon(ray, direction, "direct");
+            trace_photon(photon, depth, points, photons_global, tags_global);
+        }
+        // scale by number of photons_global from light
+        for (Photon p: photons_global) {
+            p.colour = p.colour / n;
+        }
+
+        for (int i = 0; i < n; i++) {
             // TODO improve this for other lights
             Object *obj = objects[0];
 
@@ -373,11 +384,10 @@ void Scene::emit_photons(int n, int depth, vector<double> &points) {
             to_obj.normalise();
             float cone_angle = atan(obj->radius / distance);
 
-//            Vector direction = Utils::random_direction(to_obj, cone_angle);
-            Vector direction = Utils::random_direction({0, -1, 0}, M_PI / 2);
+            Vector direction = Utils::random_direction(to_obj, cone_angle);
             Ray ray = Ray(light->position, direction);
             Photon photon = Photon(ray, direction, "direct");
-            trace_photon(photon, depth, points, photons_global, tags_global);
+            trace_photon(photon, depth, points_caustic, photons_caustic, tags_caustic);
         }
         // scale by number of photons_global from light
         for (Photon p: photons_global) {

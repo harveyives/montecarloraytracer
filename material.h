@@ -38,6 +38,13 @@ public:
         }
         result = result + base_colour * diffuse * kd;
 
+        result = result + get_specular_component(view, light_direction, normal, base_colour);
+
+        return result;
+    }
+
+    Vector get_specular_component(Vector &view, Vector &light_direction, Vector &normal, Vector &base_colour) {
+        Vector result;
         Vector reflection = Vector();
         normal.reflection(light_direction, reflection);
         float specular = reflection.dot(view);
@@ -46,7 +53,7 @@ public:
             specular = 0.0;
         }
 
-        result = result + base_colour * pow(specular, 10) * ks;
+        result = result + base_colour * pow(specular, 128) * ks;
         return result;
     }
 
