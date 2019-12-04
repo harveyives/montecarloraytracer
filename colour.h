@@ -1,7 +1,3 @@
-//
-// Created on 05/11/2019.
-//
-
 #ifndef CODE_COLOUR_H
 #define CODE_COLOUR_H
 #pragma once

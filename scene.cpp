@@ -2,7 +2,7 @@
 #include "vertex.h"
 #include "camera.h"
 #include "sphere.h"
-#include <math.h>
+#include <cmath>
 #include <string>
 #include <iostream>
 #include <cstring>
@@ -13,17 +13,18 @@
 #include <algorithm>
 #include <fstream>
 #include <sstream>
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sstream>
 #include <iterator>
-#include <float.h>
+#include <cfloat>
 #include <vector>
 #include <algorithm>
 #include "vector.h"
 #include "utils.h"
+#include "csg.h"
 
 using namespace alglib;
 
@@ -70,10 +71,12 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
 //        objects.push_back(pm);
 //    objects.push_back(pyramid);
 
-//    objects.push_back(sphere);
-//    objects.push_back(sphere_yellow);
-    objects.push_back(sphere3);
-    objects.push_back(sphere4);
+    objects.push_back(sphere);
+    objects.push_back(sphere_yellow);
+//    Object *difference = new CSG(sphere4, sphere3, "difference");
+//    objects.push_back(difference);
+//    objects.push_back(sphere3);
+//    objects.push_back(sphere4);
 
     objects.push_back(top);
     objects.push_back(bottom);
@@ -97,8 +100,8 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
 
     if (generate_photon_map) {
         cout << "Generating new photon map...  " << endl;
-        emit_photons(100000, 4, points_global);
-        build_kd_tree(points_global, tree_global, tags_global);
+        emit_photons(100000, 8, points_global);
+//        build_kd_tree(points_global, tree_global, tags_global);
         build_kd_tree(points_caustic, tree_caustic, tags_caustic);
         cout << "DONE" << endl;
         cout << "Writing to file... " << endl;
@@ -194,8 +197,7 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 
     Vector base_colour;
     if (photon_mapping) {
-        base_colour = estimate_radiance(ray, hit, 5, "direct", tree_global, 900) +
-                      estimate_radiance(ray, hit, 5, "direct", tree_caustic, 900);
+        base_colour = estimate_radiance(ray, hit, 5, "direct", tree_caustic, 900, photons_caustic);
     } else {
         base_colour = hit.what->material.colour;
     }
@@ -257,9 +259,10 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 }
 
 Vector
-Scene::estimate_radiance(Ray &ray, Hit &hit, float cone_k, const char *type, kdtree &tree, int neighbours) {
+Scene::estimate_radiance(Ray &ray, Hit &hit, float cone_k, const char *type, kdtree &tree, int neighbours,
+                         vector<Photon> &photons) {
     Vector colour = Vector();
-    vector<Photon> local_photons = gather_photons(hit.position, neighbours, tree);
+    vector<Photon> local_photons = gather_photons(hit.position, neighbours, tree, photons);
     float max_dist = -1;
     //calculate distance first
     for (Photon p: local_photons) {
@@ -364,33 +367,34 @@ Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index
 
 void Scene::emit_photons(int n, int depth, vector<double> &points) {
     for (Light *light : lights) {
-        for (int i = 0; i < n; i++) {
-            Vector direction = Utils::random_direction({0, -1, 0}, M_PI / 2);
-            Ray ray = Ray(light->position, direction);
-            Photon photon = Photon(ray, direction, "direct");
-            trace_photon(photon, depth, points, photons_global, tags_global);
-        }
-        // scale by number of photons_global from light
-        for (Photon p: photons_global) {
-            p.colour = p.colour / n;
-        }
+//        for (int i = 0; i < n; i++) {
+//            Vector direction = Utils::random_direction({0, -1, 0}, M_PI / 2);
+//            Ray ray = Ray(light->position, direction);
+//            Photon photon = Photon(ray, direction, "direct");
+//            trace_photon(photon, depth, points, photons_global, tags_global);
+//        }
+//        // scale by number of photons_global from light
+//        for (Photon p: photons_global) {
+//            p.colour = p.colour / n;
+//        }
 
         for (int i = 0; i < n; i++) {
             // TODO improve this for other lights
-            Object *obj = objects[0];
+            for (Object *obj : objects) {
+                if (obj->material.t == 0) continue;
+                Vector to_obj = obj->centre - light->position;
+                float distance = to_obj.magnitude();
+                to_obj.normalise();
+                float cone_angle = atan(obj->radius / distance);
 
-            Vector to_obj = obj->centre - light->position;
-            float distance = to_obj.magnitude();
-            to_obj.normalise();
-            float cone_angle = atan(obj->radius / distance);
-
-            Vector direction = Utils::random_direction(to_obj, cone_angle);
-            Ray ray = Ray(light->position, direction);
-            Photon photon = Photon(ray, direction, "direct");
-            trace_photon(photon, depth, points_caustic, photons_caustic, tags_caustic);
+                Vector direction = Utils::random_direction(to_obj, cone_angle);
+                Ray ray = Ray(light->position, direction);
+                Photon photon = Photon(ray, direction, "direct");
+                trace_photon(photon, depth, points_caustic, photons_caustic, tags_caustic);
+            }
         }
         // scale by number of photons_global from light
-        for (Photon p: photons_global) {
+        for (Photon p: photons_caustic) {
             p.colour = p.colour / n;
         }
     }
@@ -424,11 +428,11 @@ Scene::trace_photon(Photon photon, int depth, vector<double> &points, vector<Pho
             //diffuse
             photon.ray.direction = Utils::random_direction(hit.normal, M_PI);
             photon.type = "indirect";
-            trace_photon(photon, depth - 1, points, photons_global, tags);
+            trace_photon(photon, depth - 1, points, photons, tags);
         } else if (p <= m.kd + m.ks) {
             hit.normal.reflection(photon.ray.direction, photon.ray.direction);
             photon.type = "indirect";
-            trace_photon(photon, depth - 1, points, photons_global, tags);
+            trace_photon(photon, depth - 1, points, photons, tags);
         } else if (p <= m.kd + m.ks + m.t) {
             // cos(theta1)
             float cos_i = max(-1.f, min(photon.ray.direction.dot(hit.normal), 1.f));
@@ -441,7 +445,7 @@ Scene::trace_photon(Photon photon, int depth, vector<double> &points, vector<Pho
             refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
             photon.ray = refraction_ray;
             photon.type = "caustic";
-            trace_photon(photon, depth - 1, points, photons_global, tags);
+            trace_photon(photon, depth - 1, points, photons, tags);
         } else {
             // absorbed
             return;
@@ -449,7 +453,7 @@ Scene::trace_photon(Photon photon, int depth, vector<double> &points, vector<Pho
     }
 }
 
-vector<Photon> Scene::gather_photons(Vertex p, int k, kdtree &tree) {
+vector<Photon> Scene::gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons) {
     vector<double> point = {p.x, p.y, p.z};
     real_1d_array x;
     x.setcontent(3, point.data());
@@ -462,7 +466,7 @@ vector<Photon> Scene::gather_photons(Vertex p, int k, kdtree &tree) {
     vector<Photon> local_photons;
     local_photons.reserve(k);
     for (int i = 0; i < k; i++) {
-        local_photons.push_back(photons_global[output_tags[i]]);
+        local_photons.push_back(photons[output_tags[i]]);
     }
     return local_photons;
 }
