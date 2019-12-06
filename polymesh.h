@@ -40,7 +40,8 @@ public:
 
     void intersection(Ray ray, Hit &hit) override;
 
-    void compute_vertex_normals(void);
+    void compute_vertex_normals();
     void compute_face_normal(int which_triangle, Vector &normal);
-    void barycentric(Vertex p, Vertex a, Vertex b, Vertex c, float &u, float &v, float &w);
+
+    void compute_barycentric(Vertex p, Vertex a, Vertex b, Vertex c, float &u, float &v, float &w);
 };

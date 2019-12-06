@@ -35,8 +35,8 @@ public:
         long double max_y = abs(obj->max_limit_y);
 
         // find ratio of hit position with regards to pixel space
-        long double ratio_x = (hit.position.x + min_x) / (min_x + max_x);
-        long double ratio_y = (hit.position.y + min_y) / (min_y + max_y);
+        long double ratio_x = fabs((hit.position.x + min_x) / (min_x + max_x));
+        long double ratio_y = fabs((hit.position.y + min_y) / (min_y + max_y));
 
         // find coordinates within perlin noise corresponding to the ratio
         int i = (int) (ratio_x * perlin->n);

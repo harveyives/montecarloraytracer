@@ -4,14 +4,12 @@
  *
  * Do what you like with this code as long as you retain this comment.
  */
-
 #include <math.h>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <algorithm>
 #include "vector.h"
-
 #include "polymesh.h"
 #include "sphere.h"
 #include "utils.h"
@@ -32,9 +30,7 @@ PolyMesh::PolyMesh(char *file, Transform *transform, Material *material) : Objec
     radius = r;
 }
 
-void PolyMesh::do_construct(char *file, Transform *transform)
-{
-
+void PolyMesh::do_construct(char *file, Transform *transform) {
     ifstream  f;
     f.open(file, ios::in);
     string line;
@@ -57,6 +53,7 @@ void PolyMesh::do_construct(char *file, Transform *transform)
     face_normal = new Vector[triangle_count];
     vertex_normal = new Vector[vertex_count];
 
+    // build vertices
     for(int i = 0; i < vertex_count; i++) {
         getline(f, line);
         vector<string> temp = Utils::split_string(line);
@@ -68,6 +65,7 @@ void PolyMesh::do_construct(char *file, Transform *transform)
         transform->apply(vertices[i]);
     }
 
+    // build triangles and normals
     for(int i = 0; i < triangle_count; i++) {
         getline(f, line);
         vector<string> temp = Utils::split_string(line);
@@ -116,7 +114,7 @@ void PolyMesh::find_bounding_sphere_values(Vertex &c, float &r) {
 }
 
 void PolyMesh::intersection(Ray ray, Hit &hit) {
-//    //Before testing polymesh intersection, check bounding sphere;
+    //Before testing polymesh intersection, check bounding sphere;
     Hit bounding_hit = Hit();
     bounding_sphere->intersection(ray, bounding_hit);
     if (!bounding_hit.flag) return;
@@ -162,14 +160,13 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
         if(t < hit.t && t > 0){
             hit.t = t;
             hit.position = ray.position + t * ray.direction;
-            //triangle normal
-            ac.cross(ab, hit.normal);
+
             float u,v,w;
-            barycentric(hit.position, a,b,c,u,v,w);
-            Vector p1_normal = vertex_normal[triangles[i][0]];
-            Vector p2_normal = vertex_normal[triangles[i][1]];
-            Vector p3_normal = vertex_normal[triangles[i][2]];
-            hit.normal = p1_normal * u + p2_normal * v + p3_normal * w;
+            // interpolate normals based on barycentric coordinates
+            compute_barycentric(hit.position, a, b, c, u, v, w);
+            hit.normal = vertex_normal[triangles[i][0]] * u +
+                         vertex_normal[triangles[i][1]] * v +
+                         vertex_normal[triangles[i][2]] * w;
             hit.normal.negate();
             hit.normal.normalise();
 
@@ -179,29 +176,32 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
     }
 }
 
-void PolyMesh::compute_vertex_normals(void)
-{
-    int i,j;
-
-    // The vertex_normal array is already zeroed.
-
-    for (i = 0; i < triangle_count; i += 1)
-    {
-        for (j = 0; j < 3; j += 1)
-        {
+void PolyMesh::compute_vertex_normals() {
+    // collect neighbouring normals on faces and normalise to find vertex normal
+    for (int i = 0; i < triangle_count; i++) {
+        for (int j = 0; j < 3; j++) {
             vertex_normal[triangles[i][j]] = vertex_normal[triangles[i][j]] + face_normal[i];
         }
     }
 
-    for (i = 0; i < vertex_count; i += 1)
-    {
+    for (int i = 0; i < vertex_count; i++) {
         vertex_normal[i].normalise();
     }
 }
 
-//Transcribed from Christer Ericson's Real-Time Collision Detection (which, incidentally, is an excellent book):
-void PolyMesh::barycentric(Vertex p, Vertex a, Vertex b, Vertex c, float &u, float &v, float &w)
-{
+void PolyMesh::compute_face_normal(int triangle, Vector &normal) {
+    Vector u = vertices[triangles[triangle][1]] - vertices[triangles[triangle][0]];
+    u.normalise();
+
+    Vector v = vertices[triangles[triangle][2]] - vertices[triangles[triangle][0]];
+    v.normalise();
+
+    u.cross(v, normal);
+    normal.normalise();
+}
+
+// Transcribed from Real-Time Collision Detection by Christer Ericson
+void PolyMesh::compute_barycentric(Vertex p, Vertex a, Vertex b, Vertex c, float &u, float &v, float &w) {
     Vector v0 = b - a, v1 = c - a, v2 = p - a;
     float d00 = v0.dot(v0);
     float d01 = v0.dot(v1);
@@ -212,23 +212,4 @@ void PolyMesh::barycentric(Vertex p, Vertex a, Vertex b, Vertex c, float &u, flo
     v = (d11 * d20 - d01 * d21) / denom;
     w = (d00 * d21 - d01 * d20) / denom;
     u = 1.0f - v - w;
-}
-
-void PolyMesh::compute_face_normal(int which_triangles, Vector &normal)
-{
-    Vector v0v1, v0v2;
-    v0v1.x = vertices[triangles[which_triangles][1]].x - vertices[triangles[which_triangles][0]].x;
-    v0v1.y = vertices[triangles[which_triangles][1]].y - vertices[triangles[which_triangles][0]].y;
-    v0v1.z = vertices[triangles[which_triangles][1]].z - vertices[triangles[which_triangles][0]].z;
-
-    v0v1.normalise();
-
-    v0v2.x = vertices[triangles[which_triangles][2]].x - vertices[triangles[which_triangles][0]].x;
-    v0v2.y = vertices[triangles[which_triangles][2]].y - vertices[triangles[which_triangles][0]].y;
-    v0v2.z = vertices[triangles[which_triangles][2]].z - vertices[triangles[which_triangles][0]].z;
-
-    v0v2.normalise();
-
-    v0v1.cross(v0v2, normal);
-    normal.normalise();
 }

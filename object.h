@@ -20,13 +20,13 @@ public:
     Material *material;
     // used for bounding boxes
     Vertex centre;
-    long double min_limit_x = DBL_MAX;
-    long double min_limit_y = DBL_MAX;
-    long double min_limit_z = DBL_MAX;
-    long double max_limit_x = DBL_MIN;
-    long double max_limit_y = DBL_MIN;
-    long double max_limit_z = DBL_MIN;
     float radius;
+    long double min_limit_x = MAXFLOAT;
+    long double min_limit_y = MAXFLOAT;
+    long double min_limit_z = MAXFLOAT;
+    long double max_limit_x = -MAXFLOAT;
+    long double max_limit_y = -MAXFLOAT;
+    long double max_limit_z = -MAXFLOAT;
 
 	Object() = default;
 
