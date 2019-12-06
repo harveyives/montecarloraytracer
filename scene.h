@@ -45,7 +45,7 @@ public:
 
     void trace_photon(Photon photon, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
 
-    void emit_photons(int n, int depth, vector<double> &points);
+    void emit_photons(int n_global, int n_caustic, int depth, vector<double> &points);
 
     vector<Photon *> gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons);
 

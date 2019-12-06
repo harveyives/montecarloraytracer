@@ -8,7 +8,6 @@
 #include "scene.h"
 #include "alglib/stdafx.h"
 #include "alglib/alglibmisc.h"
-
 #include <vector>
 #include "utils.h"
 #include "phong.h"
@@ -79,8 +78,8 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     if (generate_photon_map) {
         // emit photons into scene, build tree from intersections, then save to a file
         cout << "Generating new photon matrix...  " << endl;
-        emit_photons(100000, 50, points_global);
-        build_kd_tree(points_global, tree_global, tags_global);
+        emit_photons(100000, 10000, 50, points_global);
+        b
         build_kd_tree(points_caustic, tree_caustic, tags_caustic);
         cout << "DONE" << endl;
         cout << "Writing to file... " << endl;
@@ -88,6 +87,7 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
         save_map_to_file(tree_caustic, "tree_caustic", photons_caustic, "photons_caustic");
         cout << "DONE" << endl;
     } else {
+        // load a prebuild map
         cout << "Loading pre-built maps... " << endl;
         load_map_from_file(tree_global, "tree_global", photons_global, "photons_global");
         load_map_from_file(tree_caustic, "tree_caustic", photons_caustic, "photons_caustic");
@@ -267,6 +267,7 @@ Scene::estimate_radiance(Ray &ray, Hit &hit, float cone_k, kdtree &tree, int nei
         colour = colour +
                  p->colour * m->compute_light_colour(ray.direction, p->ray.direction, hit.normal, base_colour) * filter;
     }
+    // divide through by distance and filter
     colour = colour / ((M_PI * max_dist * max_dist) * (1 - (2 / (3 * cone_k))));
     return colour;
 }
@@ -352,21 +353,17 @@ Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index
     return refracted_ray;
 }
 
-void Scene::emit_photons(int n, int depth, vector<double> &points) {
+void Scene::emit_photons(int n_global, int n_caustic, int depth, vector<double> &points) {
     for (Light *light : lights) {
-        for (int i = 0; i < n; i++) {
+        // emit photons from light in random direction downwards from light
+        for (int i = 0; i < n_global; i++) {
             Vector direction = Utils::random_direction(light->direction, M_PI / 2);
             Ray ray = Ray(light->position, direction);
             Photon photon = Photon(ray, light->intensity, "direct");
             trace_photon(photon, depth, points_global, photons_global, tags_global);
         }
-        // scale by number of photons_global from light
-        for (Photon p: photons_global) {
-            p.colour = p.colour / n;
-        }
 
-        for (int i = 0; i < n; i++) {
-            // TODO improve this for other lights
+        for (int i = 0; i < n_caustic; i++) {
             for (Object *obj : objects) {
                 // emit
                 if (obj->material->t == 0) continue;
@@ -381,9 +378,13 @@ void Scene::emit_photons(int n, int depth, vector<double> &points) {
                 trace_photon(photon, depth, points_caustic, photons_caustic, tags_caustic);
             }
         }
-        // scale by number of photons_global from light
+
+        // scale by number of photons from light
+        for (Photon p: photons_global) {
+            p.colour = p.colour / n_global;
+        }
         for (Photon p: photons_caustic) {
-            p.colour = p.colour / n;
+            p.colour = p.colour / n_caustic;
         }
     }
 }
