@@ -17,17 +17,11 @@ public:
 	Vertex position;
 	Vector direction;
 
-	Ray()
-	{
-	}
+    Ray() {}
 
 	Ray(Vertex p, Vector d)
 	{
 		position = p;
 		direction = d;
-	}
-
-	Vertex get_point(float t) {
-	    return position + t * direction;
 	}
 };

@@ -9,10 +9,11 @@
 
 class PointLight : public Light {
 public:
-    PointLight(Vertex p) : PointLight(p, Vector(255, 255, 255)) {}
+    PointLight(Vertex p) : PointLight(p, Vector(0, -1, 0), Vector(255, 255, 255)) {}
 
-    PointLight(Vertex p, Vector i) {
+    PointLight(Vertex p, Vector d, Vector i) {
         position = p;
+        direction = d;
         intensity = i;
     }
 

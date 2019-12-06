@@ -19,8 +19,8 @@ using namespace alglib;
 Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     ka = ambient;
     photon_mapping = mapping;
-    // Adding objects:
 
+    // Adding objects:
     // Polys
     Texture *t = new Texture({255, 255, 255}, 0.0, 0.8, 1, 0, 0);
     Transform *transform = new Transform(
@@ -30,23 +30,19 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
             0, 0, 3, 1
     );
     PolyMesh *teapot = new PolyMesh((char *) "teapot.ply", transform, t);
-    Transform *transform_pyramid = new Transform(
+    Transform *transform_cube = new Transform(
             5, 0, 0, 12,
             0, 0, 5, -12,
             0, 5, 0, 50,
             0, 0, 10, 1);
-    PolyMesh *cube = new PolyMesh((char *) "cube.ply", transform_pyramid,new Phong({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
-//    PolyMesh *cube = new PolyMesh((char *) "cube.ply", transform_pyramid, new Texture({255, 255, 255}, 0.0, 0.9, 1, 1));
+    PolyMesh *cube = new PolyMesh((char *) "cube.ply", transform_cube,
+                                  new Phong({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
+//    PolyMesh *cube = new PolyMesh((char *) "cube.ply", transform_cube, new Texture({255, 255, 255}, 0.0, 0.9, 1, 1));
 
 
     // Spheres
-//    Sphere *glass_ball = new Sphere(Vertex(6, -6, 36), 5, new Phong({255, 255, 255}, 0.0, 0.8, 1.7, 1));
     Sphere *mirror_ball = new Sphere(Vertex(9, -8, 55), 5, new Phong({255, 255, 255}, 0.2, 0.8, 1, 1));
     Sphere *glass_ball = new Sphere(Vertex(11, -10, 38), 4, new Phong({255, 255, 255}, 0.2, 0.0, 1.7, 1, 0.99));
-    Sphere *sphere_yellow = new Sphere(Vertex(-8, -10, 50), 5, new Phong({255, 255, 255}, 0.0, 0.9));
-    Sphere *sphere3 = new Sphere(Vertex(-3, -8, 41), 5, new Phong({255, 255, 255}, 0.0, 0.8));
-    Sphere *sphere4 = new Sphere(Vertex(3, -8, 39), 5, new Phong({255, 255, 255}, 0.0, 0.8));
-
 
     // Cornell Box
     Material *wall = new Phong({255, 255, 255}, 0.0, 0.6, 1);
@@ -57,7 +53,6 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     Plane *left = new Plane(Vertex(-15, 0, 0), Vector(1, 0, 0), red_wall);
     Plane *right = new Plane(Vertex(15, 0, 0), Vector(-1, 0, 0), green_wall);
     Plane *back = new Plane(Vertex(0, 0, 60), Vector(0, 0, -1), wall);
-    Plane *behind = new Plane(Vertex(0, 0, -50), Vector(0, 0, 1), wall);
 
     // Adding to list
         objects.push_back(teapot);
@@ -65,11 +60,6 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
 
     objects.push_back(glass_ball);
     objects.push_back(mirror_ball);
-//    objects.push_back(sphere_yellow);
-//    Object *difference = new CSG(sphere4, sphere3, "difference");
-//    objects.push_back(difference);
-//    objects.push_back(sphere3);
-//    objects.push_back(sphere4);
 
     objects.push_back(top);
     objects.push_back(bottom);
@@ -77,21 +67,17 @@ Scene::Scene(float ambient, bool mapping, bool generate_photon_map) {
     objects.push_back(right);
     objects.push_back(back);
     // Adding lights:
-    Light *l1 = new PointLight(Vertex({0, 13, 35}));
-    Light *l2 = new PointLight(Vertex({-3, 13, 40}));
-    Light *l3 = new PointLight(Vertex({3, 13, 45}));
-    Light *l4 = new PointLight(Vertex({-3, 13, 45}));
-    Light *l5 = new PointLight(Vertex({12, 12, 20}));
+    Light *l1 = new PointLight(Vertex(0, 13, 35));
+    Light *l5 = new PointLight(Vertex(12, 12, 20));
     // Adding to list
     lights.push_back(l1);
-//    lights.push_back(l2);
-//    lights.push_back(l3);
-//    lights.push_back(l4);
 //    lights.push_back(l5);
-    // TODO cleanup
+
+    // if not photon mapping, skip mapping step
     if (!photon_mapping) return;
 
     if (generate_photon_map) {
+        // emit photons into scene, build tree from intersections, then save to a file
         cout << "Generating new photon matrix...  " << endl;
         emit_photons(100000, 50, points_global);
         build_kd_tree(points_global, tree_global, tags_global);
@@ -191,16 +177,17 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
     check_intersections(ray, hit);
 
     Vector base_colour;
+
+    // if photon mapping then sample radiance, otherwise use regular base colour
     if (photon_mapping) {
 //        base_colour = estimate_radiance(ray, hit, 5, "direct", tree_caustic, 900, photons_caustic);
-        base_colour = estimate_radiance(ray, hit, 5, "indirect", tree_global, 900, photons_global);
+        base_colour = estimate_radiance(ray, hit, 5, tree_global, 900, photons_global);
 //        base_colour = base_colour + 0.01 * estimate_radiance(ray, hit, 5, "indirect", tree_caustic, 900, photons_caustic);
     } else {
-//        base_colour = hit.what->material->colour;
-        base_colour = hit.what->material->compute_base(hit);
+        base_colour = hit.what->material->compute_base_colour(hit);
     }
+
     if (hit.flag) {
-//        // TODO change these ugly pointers
         for (Light *light : lights) {
             // if area shaded
             if (object_occluded(objects, hit.position, light->position)) {
@@ -220,17 +207,16 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
             }
 
         }
-        // multiply by how transparent it is
+        // multiply by how transparent it is to get a small amount of colour of the object
         colour = colour + base_colour * ka * (1 - hit.what->material->t);
         colour = colour / lights.size();
 
-//        return colour;
         // cos(theta1)
         float cos_i = max(-1.f, min(ray.direction.dot(hit.normal), 1.f));
         // compute kr by Fresnel only if transparent
         float kr = (hit.what->material->t != 0) ? fresnel(hit.what->material->ior, cos_i) : hit.what->material->r;
 
-        // Remove speckles TODO reuse this in shadow
+        // Remove speckles by shifting ray
         Vector shift_bias = 0.001 * hit.normal;
 
         // only compute if reflective material
@@ -257,25 +243,29 @@ Vector Scene::compute_colour(Ray &ray, int depth) {
 }
 
 Vector
-Scene::estimate_radiance(Ray &ray, Hit &hit, float cone_k, const char *type, kdtree &tree, int neighbours,
-                         vector<Photon> &photons) {
+Scene::estimate_radiance(Ray &ray, Hit &hit, float cone_k, kdtree &tree, int neighbours, vector<Photon> &photons) {
     Vector colour = Vector();
     vector<Photon *> local_photons = gather_photons(hit.position, neighbours, tree, photons);
+
+    // find max distance
     float max_dist = -1;
-    //calculate distance first
     for (Photon *p: local_photons) {
-//        if (p.type != type) continue;
         float dist = (p->ray.position - hit.position).magnitude();
         if (dist > max_dist) max_dist = dist;
     }
 
     for (Photon *p: local_photons) {
-//        if (p.type != type) continue;
         float dist = (p->ray.position - hit.position).magnitude();
+
+        // build cone filter to filter sample
         float filter = 1 - (dist / (cone_k * max_dist));
-        colour = colour + p->colour *
-                          hit.what->material->compute_light_colour(ray.direction, p->ray.direction, hit.normal,
-                                                                   hit.what->material->compute_base(hit)) * filter;
+
+        Material *m = hit.what->material;
+        Vector base_colour = hit.what->material->compute_base_colour(hit);
+
+        // calculate photon contribution based on brdf and photon intensity
+        colour = colour +
+                 p->colour * m->compute_light_colour(ray.direction, p->ray.direction, hit.normal, base_colour) * filter;
     }
     colour = colour / ((M_PI * max_dist * max_dist) * (1 - (2 / (3 * cone_k))));
     return colour;
@@ -290,7 +280,8 @@ bool Scene::object_occluded(vector<Object *> &objects, Vertex &hit_position, Ver
     shadow.direction.normalise();
 
     // shifting so that the face does not self-shadow
-    shadow.position = shadow.get_point(0.001);
+    Vector shift_bias = 0.001 * shadow.direction;
+    shadow.position = shadow.position + shift_bias;
 
     Hit obj_shadow_hit = Hit();
     for (Object *obj : objects) {
@@ -364,10 +355,10 @@ Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index
 void Scene::emit_photons(int n, int depth, vector<double> &points) {
     for (Light *light : lights) {
         for (int i = 0; i < n; i++) {
-            Vector direction = Utils::random_direction({0, -1, 0}, M_PI / 2);
+            Vector direction = Utils::random_direction(light->direction, M_PI / 2);
             Ray ray = Ray(light->position, direction);
             Photon photon = Photon(ray, light->intensity, "direct");
-            trace_photon(photon, depth, points, photons_global, tags_global);
+            trace_photon(photon, depth, points_global, photons_global, tags_global);
         }
         // scale by number of photons_global from light
         for (Photon p: photons_global) {
@@ -377,6 +368,7 @@ void Scene::emit_photons(int n, int depth, vector<double> &points) {
         for (int i = 0; i < n; i++) {
             // TODO improve this for other lights
             for (Object *obj : objects) {
+                // emit
                 if (obj->material->t == 0) continue;
                 Vector to_obj = obj->centre - light->position;
                 float distance = to_obj.magnitude();
@@ -404,11 +396,9 @@ Scene::trace_photon(Photon photon, int depth, vector<double> &points, vector<Pho
     check_intersections(photon.ray, hit);
     if (hit.flag) {
         photon.ray.position = hit.position;
-//        if (photon.type == "direct") {
-////            photon.colour = hit.what->material->colour;
-////        }
 
         Material *m = hit.what->material;
+        // only store if it's a diffuse object
         if (m->ks == 0) {
             photon.ray.direction.negate();
             photons.push_back(photon);
@@ -417,45 +407,39 @@ Scene::trace_photon(Photon photon, int depth, vector<double> &points, vector<Pho
             points.push_back(photon.ray.position.y);
             points.push_back(photon.ray.position.z);
         }
-//        photon.type = "indirect";
 
         // Russian Roulette
         float p = Utils::get_random_number(0, 1);
         if (p <= m->kd) {
-            //diffuse
+            // diffuse reflection
             photon.ray.direction = Utils::random_direction(hit.normal, M_PI);
             photon.type = "indirect";
-            Vector col = m->compute_base(hit) / m->kd;
+            Vector col = m->compute_base_colour(hit) / m->kd;
             Photon test = Photon(photon.ray, col, "indirect");
             trace_photon(test, depth - 1, points, photons, tags);
         } else if (p <= m->kd + m->ks) {
+            // specular reflection
             hit.normal.reflection(photon.ray.direction, photon.ray.direction);
-            photon.type = "indirect";
-
-
-            Vector col = m->compute_base(hit) / m->ks;
-            Photon test = Photon(photon.ray, col, "indirect");
-            trace_photon(test, depth - 1, points, photons, tags);
+            Vector colour = m->compute_base_colour(hit) / m->ks;
+            Photon new_photon = Photon(photon.ray, colour, "indirect");
+            trace_photon(new_photon, depth - 1, points, photons, tags);
         } else if (p <= m->kd + m->ks + m->t) {
 //            Vector col;
-//            col.x = photon.colour.x * hit.what->material->compute_base(hit) / m->t;
-//            col.y = photon.colour.y * hit.what->material->compute_base(hit) / m->t;
-//            col.z = photon.colour.z * hit.what->material->compute_base(hit) / m->t;
+//            col = photon.colour* hit.what->material->compute_base(hit) / m->t;
             // cos(theta1)
+            // TODO use refraction method?
             float cos_i = max(-1.f, min(photon.ray.direction.dot(hit.normal), 1.f));
             Ray refraction_ray = Ray();
             refraction_ray.direction = refract(photon.ray.direction, hit.normal, hit.what->material->ior, cos_i);
             refraction_ray.direction.normalise();
 
-            // Remove speckles TODO reuse this in shadow
             Vector shift_bias = 0.001 * hit.normal;
             refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
             photon.ray = refraction_ray;
-            photon.type = "caustic";
 
-            Vector col = m->compute_base(hit);
-            Photon test = Photon(photon.ray, col, "caustic");
-            trace_photon(test, depth - 1, points, photons, tags);
+            Vector colour = m->compute_base_colour(hit);
+            Photon new_photon = Photon(photon.ray, colour, "caustic");
+            trace_photon(new_photon, depth - 1, points, photons, tags);
         } else {
             // absorbed
             return;
@@ -463,11 +447,12 @@ Scene::trace_photon(Photon photon, int depth, vector<double> &points, vector<Pho
     }
 }
 
+// gather k nearest neighbour photons
 vector<Photon *> Scene::gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons) {
+    // boiler plate code to query kd tree
     vector<double> point = {p.x, p.y, p.z};
     real_1d_array x;
     x.setcontent(3, point.data());
-
     kdtreequeryknn(tree, x, k);
     real_2d_array r = "[[]]";
     integer_1d_array output_tags = "[]";

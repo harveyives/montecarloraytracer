@@ -27,7 +27,7 @@ public:
         t = transparent;
     }
 
-    Vector compute_base(Hit &hit) override {
+    Vector compute_base_colour(Hit &hit) override {
         Object *obj = hit.what;
         long double min_x = abs(obj->min_limit_x);
         long double min_y = abs(obj->min_limit_y);

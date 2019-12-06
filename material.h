@@ -57,6 +57,6 @@ public:
         return result;
     };
 
-    virtual Vector compute_base(Hit &hit) = 0;
+    virtual Vector compute_base_colour(Hit &hit) = 0;
 };
 #endif //CODE_MATERIAL_H
