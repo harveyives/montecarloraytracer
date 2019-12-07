@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
         for (int r = 0; r < height; r++) {
             Ray ray = Ray(eye, camera->get_ray_direction(c, r));
 
-            Vector colour = scene->compute_colour(ray, 4);
+            Vector colour = scene->get_pixel(ray, 4);
             fb->plotPixel(c, r, colour.x, colour.y, colour.z);
         }
     }

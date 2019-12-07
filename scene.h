@@ -35,7 +35,7 @@ public:
 
     Hit check_intersections(Ray &ray, Hit &hit);
 
-    Vector compute_colour(Ray &ray, int depth);
+    Vector get_pixel(Ray &ray, int depth);
 
     static bool object_occluded(vector<Object *> &objects, Vertex &hit_position, Vertex &light_position);
 
@@ -45,12 +45,11 @@ public:
 
     void trace_photon(Photon photon, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
 
-    void emit_photons(int n_global, int n_caustic, int depth, vector<double> &points);
+    void emit_photons(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
 
     vector<Photon *> gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons);
 
-    Vector estimate_radiance(Ray &ray, Hit &hit, float cone_k, kdtree &tree, int neighbours,
-                             vector<Photon> &photons);
+    Vector estimate_radiance(Ray &ray, Hit &hit, kdtree &tree, int neighbours, vector<Photon> &photons);
 
     void build_kd_tree(vector<double> &points, kdtree &tree, vector<long> &tags);
 
@@ -59,5 +58,7 @@ public:
 
     void load_map_from_file(kdtree &tree, const char *tree_filename, vector<Photon> &photons,
                             const char *photons_filename);
+
+    void emit_photons_caustic(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
 };
 #endif //CODE_SCENE_H

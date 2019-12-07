@@ -14,7 +14,7 @@ public:
         direction = d;
     }
 
-    Vector get_light_direction(Vertex p) override {
+    Vector get_direction(Vertex p) override {
         return direction;
     }
 };

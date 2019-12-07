@@ -131,4 +131,12 @@ public:
 
         return *this;
     }
+
+    Vector operator*=(float s) {
+        x *= s;
+        y *= s;
+        z *= s;
+
+        return *this;
+    }
 };

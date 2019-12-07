@@ -64,7 +64,9 @@ public:
         float y = sqrt(1 - z * z) * sin(phi);
 
         // combine
-        return x * basis_x + y * basis_y + z * basis_z;
+        Vector result = x * basis_x + y * basis_y + z * basis_z;
+        result.normalise();
+        return result;
     }
 
     // linear interpolation

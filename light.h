@@ -13,7 +13,11 @@ public:
     Vector direction;
     Vector intensity;
 
-    virtual Vector get_light_direction(Vertex point) = 0;
+    virtual Vertex get_position() {
+        return position;
+    }
+
+    virtual Vector get_direction(Vertex point) = 0;
 };
 
 #endif //CODE_LIGHT_H

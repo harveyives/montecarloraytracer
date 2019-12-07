@@ -1,7 +1,3 @@
-//
-// Created by harve on 23/10/2019.
-//
-
 #ifndef CODE_POINT_LIGHT_H
 #define CODE_POINT_LIGHT_H
 
@@ -17,7 +13,7 @@ public:
         intensity = i;
     }
 
-    Vector get_light_direction(Vertex p) override {
+    Vector get_direction(Vertex p) override {
         direction = position - p;
         direction.normalise();
         return direction;
