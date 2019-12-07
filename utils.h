@@ -71,6 +71,10 @@ public:
     static float lerp(double t, double a, double b) {
         return a + t * (b - a);
     }
+
+    static float clamp(float n, float lower, float upper) {
+        return max(lower, min(n, upper));
+    }
 };
 
 

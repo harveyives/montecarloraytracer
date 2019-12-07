@@ -123,4 +123,12 @@ public:
     {
         return {x + v.x,y + v.y,z + v.z};
     }
+
+    Vector operator+=(Vector v) {
+        x += v.x;
+        y += v.y;
+        z += v.z;
+
+        return *this;
+    }
 };
