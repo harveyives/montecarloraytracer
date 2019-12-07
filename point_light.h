@@ -3,6 +3,8 @@
 
 #include "light.h"
 
+// Class to model point lights, which get their direction based on a point (typically intersection)
+
 class PointLight : public Light {
 public:
     PointLight(Vertex p) : PointLight(p, Vector(0, -1, 0), Vector(255, 255, 255)) {}

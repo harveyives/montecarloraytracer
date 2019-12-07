@@ -1,11 +1,9 @@
-//
-// Created by harve on 22/10/2019.
-//
-
 #ifndef CODE_LIGHT_H
 #define CODE_LIGHT_H
 
 #include "vertex.h"
+
+// abstract class for lights
 
 class Light {
 public:

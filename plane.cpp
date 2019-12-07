@@ -3,6 +3,8 @@
 #include "ray.h"
 #include "hit.h"
 
+// Class to model planes using position and normal direction;
+
 void Plane::intersection(Ray ray, Hit &hit)
 {
     ray.direction.normalise();

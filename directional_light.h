@@ -1,11 +1,9 @@
-//
-// Created by harve on 23/10/2019.
-//
-
 #ifndef CODE_DIRECTIONAL_LIGHT_H
 #define CODE_DIRECTIONAL_LIGHT_H
 
 #include "light.h"
+
+// light with direction only - position is not accounted for
 
 class DirectionalLight : public Light {
 public:

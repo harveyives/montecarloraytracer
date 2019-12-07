@@ -1,13 +1,10 @@
-//
-// Created by harve on 04/11/2019.
-//
-
 #ifndef CODE_PHONG_H
 #define CODE_PHONG_H
 
 #include "vector.h"
-#include "colour.h"
 #include "material.h"
+
+// Class to model simple phong textures, implementations are in material superclass
 
 class Phong : public Material {
 public:

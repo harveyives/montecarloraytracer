@@ -4,6 +4,8 @@
 #include "light.h"
 #include "utils.h"
 
+// light where each ray is spawned at a different location within given limits
+
 class AreaLight : public Light {
 public:
     float spread;

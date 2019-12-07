@@ -1,16 +1,11 @@
-//
-// Created by harve on 04/12/2019.
-//
-
 #include "perlin.h"
-#include "colour.h"
 #include "utils.h"
 
 using namespace std;
 
-// Perlin Noise - Copyright Ken Perlin
+// Class used to model marble, wood, clouds textures that can be sampled for texturing objects
+// Perlin Noise by Ken Perlin
 // https://mrl.nyu.edu/~perlin/noise/
-// c++ implementation
 // with advice from https://lodev.org/cgtutor/randomnoise.html
 Perlin::Perlin() {
     // convert permutations to be within colour range 0-255
@@ -30,6 +25,7 @@ Perlin::Perlin() {
 }
 
 Vector Perlin::sample(int i, int j, int turbulence_power, int turbulence_size, int x_period, int y_period) {
+    // generate output value
     float val = fabs(sin(x_period * i / n + y_period * j / n + turbulence_power * turbulence(j, i, 0.8, turbulence_size) * M_PI));
     return Vector(val, val, val);
 }

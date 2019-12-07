@@ -1,12 +1,10 @@
-//
-// Created by Harvey Ives on 10/10/2019.
-//
 #include "camera.h"
 #include "vector.h"
 #include "vertex.h"
 
+// class to model the camera, calculates rays based on location, size of image, etc...
+
 Camera::Camera(Vertex eye, Vertex look, Vector up, double d, float fov, int height, int width) {
-    // TODO clear this stuff up
     this->eye = eye;
     this->look = look;
     this->up = up;

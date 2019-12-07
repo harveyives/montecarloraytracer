@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "openmp-use-default-none"
 /***************************************************************************
  *
  * krt - Kens Raytracer - Coursework Edition. (C) Copyright 1997-2019.
@@ -18,6 +16,8 @@
 
 using namespace std;
 
+// main method to raytrace an image
+
 int main(int argc, char *argv[]) {
     int width = stoi(argv[1]);
     int height = stoi(argv[2]);
@@ -30,12 +30,12 @@ int main(int argc, char *argv[]) {
     Vertex eye = Vertex(0, 0, 0);
     Vertex look = Vertex(0, 0, 1);
     Vector up = Vector(0, 1, 0);
-    // TODO move this to the scene?
     Camera *camera = new Camera(eye, look, up, 1, 50, height, width);
     Scene *scene = new Scene(0.6, photon_mapping, generate_photon_map);
 
+    // start timer.
     clock_t start;
-    double duration;
+    double time;
 
     start = clock();
     cout << "Tracing... " << endl;
@@ -44,14 +44,14 @@ int main(int argc, char *argv[]) {
         for (int r = 0; r < height; r++) {
             Ray ray = Ray(eye, camera->get_ray_direction(c, r));
 
-            Vector colour = scene->get_pixel(ray, 4);
+            Vector colour = scene->trace(ray, 4);
             fb->plotPixel(c, r, colour.x, colour.y, colour.z);
         }
     }
     cout << "DONE" << endl;
-    duration = (clock() - start) / (double) CLOCKS_PER_SEC;
+    time = (clock() - start) / (double) CLOCKS_PER_SEC;
 
-    std::cout << "printf: " << duration << '\n';
+    std::cout << "printf: " << time << '\n';
 
     //   Output the framebuffer.
     cout << "Outputting..." << endl;

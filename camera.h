@@ -1,10 +1,10 @@
-//
-// Created by Harvey Ives on 10/10/2019.
-//
 #pragma once
 
 #include "vertex.h"
 #include "vector.h"
+
+
+// class to model the camera, calculates rays based on location, size of image, etc...
 
 class Camera {
 public:

@@ -1,12 +1,7 @@
-//
-// Created by harve on 04/11/2019.
-//
-
 #ifndef CODE_TEXTURE_H
 #define CODE_TEXTURE_H
 
 #include "vector.h"
-#include "colour.h"
 #include "material.h"
 #include "perlin.h"
 

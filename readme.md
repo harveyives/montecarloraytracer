@@ -1,6 +1,19 @@
-**CM30075 Advanced Computer Graphics** 
-<br>Compile using:  `g++ -std=c++11 -o raytracer raycaster.cpp camera.cpp framebuffer.cpp linedrawer.cpp polymesh.cpp sphere.cpp plane.cpp -lm -O3`
-<br>Then run by: `./raytracer`
+#CM30075 Advanced Computer Graphics
+##Features 
+- Basic raytracer with Phong lighting model
+    - supports ply files
+    - bounding spheres for polymesh objects
+- Photon mapping
+    - supports map serialisation and saving
+- Phong shading
+- Perlin noise texture generation
+## Compilation & Execution 
+Compile using:  
+>g++  -std=c++11 -o raytrace main.cpp camera.cpp framebuffer.cpp linedrawer.cpp polymesh.cpp sphere.cpp plane.cpp scene.cpp perlin.cpp alglib/*.cpp -lm -O3
+
+Then run by: 
+>./raytracer <width> <height> <enable_photon_mapping> <generate_photon_map>
+
+eg. `./raytracer 128 128 1 1` should take less than 30 seconds on modern computer hardware.
 
 
-g++ -std=c++11 -o raytrace main.cpp camera.cpp framebuffer.cpp linedrawer.cpp polymesh.cpp sphere.cpp plane.cpp scene.pp -lm -O3  && ./raytrace

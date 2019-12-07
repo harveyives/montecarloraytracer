@@ -1,12 +1,9 @@
-//
-// Created by harve on 04/11/2019.
-//
-
 #ifndef CODE_MATERIAL_H
 #define CODE_MATERIAL_H
 
 #include "vector.h"
-#include "colour.h"
+
+// abstract class to model materials for objects (phong or textured).
 
 class Material {
 protected:

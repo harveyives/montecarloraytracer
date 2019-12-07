@@ -9,17 +9,13 @@
 
 using namespace std;
 
-enum class photon_type {
-    direct,
-    indirect,
-    shadow,
-    caustic
-};
+// Class to model photons that are used for photon mapping
 
 class Photon {
 public:
     Ray ray;
     Vector colour;
+    // strings are used because they are easier serialise for saving
     string type;
 
     Photon(Ray r, Vector c, string t) {

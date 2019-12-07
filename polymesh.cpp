@@ -16,6 +16,8 @@
 
 using namespace std;
 
+// Class to model objects constructed from triangles
+
 PolyMesh::PolyMesh(char *file, Transform *transform) : PolyMesh(file, transform, new Phong()) {}
 
 PolyMesh::PolyMesh(char *file, Transform *transform, Material *material) : Object(material) {
@@ -78,8 +80,8 @@ void PolyMesh::do_construct(char *file, Transform *transform) {
     compute_vertex_normals();
 }
 
+// Implementation of Jack Ritter's Bounding Sphere algorithm.
 void PolyMesh::find_bounding_sphere_values(Vertex &c, float &r) {
-    // Implementation of Jack Ritter's Bounding Sphere algorithm.
     //find limits
     for(int i = 0; i < vertex_count; i++) {
         if(vertices[i].x < min_limit_x) min_limit_x = vertices[i].x;
@@ -93,6 +95,8 @@ void PolyMesh::find_bounding_sphere_values(Vertex &c, float &r) {
     float dx = abs(max_limit_x - min_limit_x);
     float dy = abs(max_limit_y - min_limit_y);
     float dz = abs(max_limit_z - min_limit_z);
+
+    // max points used in texture generation
     Vertex max_point = {static_cast<float>(max_limit_x), static_cast<float>(max_limit_y), static_cast<float>(max_limit_z)};
     Vertex min_point = {static_cast<float>(min_limit_x), static_cast<float>(min_limit_y), static_cast<float>(min_limit_z)};
 
@@ -190,6 +194,7 @@ void PolyMesh::compute_vertex_normals() {
 }
 
 void PolyMesh::compute_face_normal(int triangle, Vector &normal) {
+    // cross two triangle edges to find normals
     Vector u = vertices[triangles[triangle][1]] - vertices[triangles[triangle][0]];
     u.normalise();
 

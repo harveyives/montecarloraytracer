@@ -9,6 +9,8 @@
 #include "object.h"
 #include "phong.h"
 
+// Class to model planes using position and normal direction; 
+
 class Plane : public Object {
     Vector normal;
     Vertex position;
