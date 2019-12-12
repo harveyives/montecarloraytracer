@@ -88,6 +88,8 @@ Scene::Scene(float ambient, bool generate_photon_map) {
 
     // Adding to list
     lights.push_back(area_light);
+
+
     pm = new PhotonMap(objects, lights);
     if (generate_photon_map) {
         // emit photons into scene, build tree from intersections, then save to a file
@@ -119,29 +121,29 @@ Vector Scene::trace(Ray &ray, int depth) {
     Hit hit = Hit();
     check_intersections(ray, hit);
 
-    Vector emissive, global, caustic;
-
-    int k = 700;
-    vector<Photon *> local_photons = pm->gather_photons(hit.position, k, tree_global, photons_global);
-    int d = 200;
-    vector<Photon *> local_photons_caustic = pm->gather_photons(hit.position, d, tree_caustic, photons_caustic);
-
-    Material *m = hit.what->material;
-    if (m->is_emissive()) {
-        emissive += m->e;
-    }
-    global = pm->estimate_radiance(ray, hit, tree_global, photons_global, local_photons);
-    caustic = pm->estimate_radiance(ray, hit, tree_caustic, photons_caustic, local_photons_caustic);
-
-    // add proportions of light from difference sources, scaled to even brightness
-    Vector base_colour = emissive * pow(10, 3.5) +
-                         global +
-                         caustic * pow(10, -1.15);
-
+    // only compute light if hit
     if (hit.flag) {
+        Vector emissive, global, caustic;
+        int neighbours = 700;
+        int neighbours_caustic = 200;
+        vector<Photon *> local_photons = pm->gather_photons(hit.position, neighbours, tree_global, photons_global);
+        vector<Photon *> local_photons_caustic = pm->gather_photons(hit.position, neighbours_caustic, tree_caustic,
+                                                                    photons_caustic);
+
+        Material *m = hit.what->material;
+        if (m->is_emissive()) emissive += m->e;
+        global = pm->estimate_radiance(ray, hit, tree_global, photons_global, local_photons);
+        caustic = pm->estimate_radiance(ray, hit, tree_caustic, photons_caustic, local_photons_caustic);
+
+        // in accordance with rendering equation
+        // add proportions of light from difference sources, scaled to even brightness
+        Vector base_colour = emissive * pow(10, 3.5) +
+                             global +
+                             caustic * pow(10, -1.15);
+
         for (Light *light : lights) {
             // if not many shadow photons, don't need to test for shadows
-            if (pm->in_shadow(hit, k, local_photons)) {
+            if (pm->in_shadow(hit, neighbours, local_photons)) {
                 if (object_occluded(objects, hit.position, light->position)) {
                     continue;
                 }
@@ -180,7 +182,7 @@ Vector Scene::trace(Ray &ray, int depth) {
             Ray refraction_ray = Ray();
             refraction_ray.direction = refract(ray.direction, hit.normal, m->ior, cos_i);
             refraction_ray.direction.normalise();
-
+            // shift position depending on if the ray is inside or outside
             refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
 
             colour += (1 - kr) * trace(refraction_ray, depth - 1);
@@ -235,6 +237,7 @@ void Scene::trace_photon(Photon p, int depth, vector<double> &points, vector<Pho
             refraction_ray.direction.normalise();
 
             Vector shift_bias = 0.001 * hit.normal;
+            // shift position depending on if the ray is inside or outside
             refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
             p.ray = refraction_ray;
             p.colour = m->base_colour(hit) / m->t;
@@ -320,6 +323,7 @@ Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index
     return refracted_ray;
 }
 
+// used to calculate KR
 // Fresnel Equations as per wikipedia.
 // https://en.wikipedia.org/wiki/Fresnel_equations
 // with advice from https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel
@@ -347,7 +351,7 @@ float Scene::fresnel(float refractive_index, float cos_i) {
         // Fresnel Equations
         // p-polarised
         float per = ((n2 * cos_i) - (n1 * cos_t)) /
-                    ((n2 * cos_i) + (n1 * cos_t));
+                ((n2 * cos_i) + (n1 * cos_t));
         // s-polarised
         float par = ((n2 * cos_t) - (n1 * cos_i)) /
                     ((n2 * cos_t) + (n1 * cos_i));
@@ -371,6 +375,7 @@ Hit Scene::check_intersections(Ray &ray, Hit &hit) {
     return hit;
 }
 
+// test if object in shadow by emitting shadow rays
 bool Scene::object_occluded(vector<Object *> &objects, Vertex &hit_position, Vertex &light_position) {
     Ray shadow = Ray();
     shadow.position = hit_position;

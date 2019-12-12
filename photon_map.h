@@ -16,6 +16,8 @@
 using namespace std;
 using namespace alglib;
 
+// class containing functions to manipulate the data in the photon map
+
 class PhotonMap {
 public:
     vector<Object *> objects;

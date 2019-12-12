@@ -15,13 +15,15 @@
 #include "vector.h"
 #include "photon_map.h"
 
+// class containing functions to manipulate the data in the photon map
+
 PhotonMap::PhotonMap(vector<Object *> o, vector<Light *> l) {
     objects = o;
     lights = l;
 }
 
-Vector
-PhotonMap::estimate_radiance(Ray &ray, Hit &hit, kdtree &tree, vector<Photon> &photons,
+// estimate radiance for a given point
+Vector PhotonMap::estimate_radiance(Ray &ray, Hit &hit, kdtree &tree, vector<Photon> &photons,
                              vector<Photon *> local_photons) {
     Vector colour = Vector();
     Material *m = hit.what->material;
