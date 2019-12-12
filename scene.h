@@ -10,6 +10,7 @@
 #include "plane.h"
 #include "sphere.h"
 #include "photon.h"
+#include "photon_map.h"
 #include "alglib/stdafx.h"
 #include "alglib/alglibmisc.h"
 
@@ -29,6 +30,7 @@ public:
     vector<long> tags_caustic;
     kdtree tree_global;
     kdtree tree_caustic;
+    PhotonMap *pm;
 
     Scene(float ambient, bool generate_photon_map);
 
@@ -42,30 +44,9 @@ public:
 
     Vector refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i);
 
-    void trace_photon(Photon p, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
-
     void emit(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags, bool is_caustic);
 
-    vector<Photon *> gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons);
-
-    Vector estimate_radiance(Ray &ray, Hit &hit, kdtree &tree, vector<Photon> &photons, vector<Photon *> local_photons);
-
-    void build_kd_tree(vector<double> &points, kdtree &tree, vector<long> &tags);
-
-    static void
-    save_map_to_file(kdtree &tree, const char *tree_filename, vector<Photon> &photons, const char *photons_filename);
-
-    void load_map_from_file(kdtree &tree, const char *tree_filename, vector<Photon> &photons,
-                            const char *photons_filename);
-
-    void emit_caustic(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
-
-    void store_photon(Photon p, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
-
-    bool in_shadow(const Hit &hit, int k, vector<Photon *> &local_photons);
-
-    void
-    distribute_shadow_photons(const Photon &p, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
+    void trace_photon(Photon p, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
 
     void
     trace_default_photon(int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags, Light *light);

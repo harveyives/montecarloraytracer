@@ -13,6 +13,7 @@
 #include "phong.h"
 #include "texture.h"
 #include "area_light.h"
+#include "photon_map.h"
 
 using namespace alglib;
 
@@ -87,24 +88,24 @@ Scene::Scene(float ambient, bool generate_photon_map) {
 
     // Adding to list
     lights.push_back(area_light);
-
+    pm = new PhotonMap(objects, lights);
     if (generate_photon_map) {
         // emit photons into scene, build tree from intersections, then save to a file
         cout << "Generating new photon map...  " << endl;
         emit(50000, 50, points_global, photons_global, tags_global, false);
         emit(10000, 50, points_caustic, photons_caustic, tags_caustic, true);
-        build_kd_tree(points_global, tree_global, tags_global);
-        build_kd_tree(points_caustic, tree_caustic, tags_caustic);
+        pm->build_kd_tree(points_global, tree_global, tags_global);
+        pm->build_kd_tree(points_caustic, tree_caustic, tags_caustic);
         cout << "DONE" << endl;
         cout << "Writing to file... " << endl;
-        save_map_to_file(tree_global, "tree_global", photons_global, "photons_global");
-        save_map_to_file(tree_caustic, "tree_caustic", photons_caustic, "photons_caustic");
+        pm->save_map_to_file(tree_global, "tree_global", photons_global, "photons_global");
+        pm->save_map_to_file(tree_caustic, "tree_caustic", photons_caustic, "photons_caustic");
         cout << "DONE" << endl;
     } else {
         // load a prebuild map
         cout << "Loading pre-built maps... " << endl;
-        load_map_from_file(tree_global, "tree_global", photons_global, "photons_global");
-        load_map_from_file(tree_caustic, "tree_caustic", photons_caustic, "photons_caustic");
+        pm->load_map_from_file(tree_global, "tree_global", photons_global, "photons_global");
+        pm->load_map_from_file(tree_caustic, "tree_caustic", photons_caustic, "photons_caustic");
         cout << "DONE" << endl;
     }
 
@@ -121,16 +122,16 @@ Vector Scene::trace(Ray &ray, int depth) {
     Vector emissive, global, caustic;
 
     int k = 700;
-    vector<Photon *> local_photons = gather_photons(hit.position, k, tree_global, photons_global);
+    vector<Photon *> local_photons = pm->gather_photons(hit.position, k, tree_global, photons_global);
     int d = 200;
-    vector<Photon *> local_photons_caustic = gather_photons(hit.position, d, tree_caustic, photons_caustic);
+    vector<Photon *> local_photons_caustic = pm->gather_photons(hit.position, d, tree_caustic, photons_caustic);
 
     Material *m = hit.what->material;
     if (m->is_emissive()) {
         emissive += m->e;
     }
-    global = estimate_radiance(ray, hit, tree_global, photons_global, local_photons);
-    caustic = estimate_radiance(ray, hit, tree_caustic, photons_caustic, local_photons_caustic);
+    global = pm->estimate_radiance(ray, hit, tree_global, photons_global, local_photons);
+    caustic = pm->estimate_radiance(ray, hit, tree_caustic, photons_caustic, local_photons_caustic);
 
     // add proportions of light from difference sources, scaled to even brightness
     Vector base_colour = emissive * pow(10, 3.5) +
@@ -140,7 +141,7 @@ Vector Scene::trace(Ray &ray, int depth) {
     if (hit.flag) {
         for (Light *light : lights) {
             // if not many shadow photons, don't need to test for shadows
-            if (in_shadow(hit, k, local_photons)) {
+            if (pm->in_shadow(hit, k, local_photons)) {
                 if (object_occluded(objects, hit.position, light->position)) {
                     continue;
                 }
@@ -188,40 +189,66 @@ Vector Scene::trace(Ray &ray, int depth) {
     return colour;
 }
 
-Vector
-Scene::estimate_radiance(Ray &ray, Hit &hit, kdtree &tree, vector<Photon> &photons, vector<Photon *> local_photons) {
-    Vector colour = Vector();
-    Material *m = hit.what->material;
 
-    // find max distance
-    float max_dist = -1;
-    for (Photon *p: local_photons) {
-        float dist = (p->ray.position - hit.position).magnitude();
-        if (dist > max_dist) max_dist = dist;
+void Scene::trace_photon(Photon p, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags) {
+    if (depth <= 0) return;
+
+    Hit hit = Hit();
+    check_intersections(p.ray, hit);
+    if (hit.flag) {
+        p.ray.position = hit.position;
+
+        Material *m = hit.what->material;
+        // only store if it's a diffuse object
+        if (m->kd != 0) {
+            pm->store_photon(p, points, photons, tags);
+        }
+
+        // only record shadow photons in the global map
+        if (p.type != "caustic") {
+            // test intersections with each object and store shadow photons there
+            pm->distribute_shadow_photons(p, points, photons, tags);
+        }
+
+        // Russian Roulette
+        float probability = Utils::get_random_number(0, 1);
+        if (probability <= m->kd) {
+            // According to grammar, caustic photons terminate at diffuse bounce
+            if (p.type == "caustic") return;
+
+            // diffuse reflection
+            p.ray.direction = Utils::random_direction(hit.normal, M_PI);
+            p.colour = m->base_colour(hit) / m->kd;
+            trace_photon(p, depth - 1, points, photons, tags);
+        } else if (probability <= m->kd + m->ks) {
+            // specular reflection
+            hit.normal.reflection(p.ray.direction, p.ray.direction);
+            p.colour = m->base_colour(hit) / m->ks;
+            trace_photon(p, depth - 1, points, photons, tags);
+        } else if (probability <= m->kd + m->ks + m->t) {
+            // transmit
+            if (p.type != "caustic") return;
+
+            float cos_i = max(-1.f, min(p.ray.direction.dot(hit.normal), 1.f));
+            Ray refraction_ray = Ray();
+            refraction_ray.direction = refract(p.ray.direction, hit.normal, hit.what->material->ior, cos_i);
+            refraction_ray.direction.normalise();
+
+            Vector shift_bias = 0.001 * hit.normal;
+            refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
+            p.ray = refraction_ray;
+            p.colour = m->base_colour(hit) / m->t;
+            trace_photon(p, depth - 1, points, photons, tags);
+        } else {
+            // absorbed
+            return;
+        }
     }
-
-    for (Photon *p: local_photons) {
-        float dist = (p->ray.position - hit.position).magnitude();
-
-        Vector base_colour = m->base_colour(hit);
-
-        // gaussian filtering as per Henrik Jensen's recommendations.
-        float alpha = 0.918;
-        float beta = 1.953;
-        float gaussian =
-                alpha * (1 - (1 - exp(-beta * ((dist * dist) / (2 * max_dist * max_dist)))) / (1 - exp(-beta)));
-
-        // calculate photon contribution based on brdf and photon intensity
-        colour += p->colour * m->light_colour(ray.direction, p->ray.direction, hit.normal, base_colour) * gaussian;
-    }
-    // divide through by max volume of disc sampled within
-    colour = colour / (M_PI * max_dist * max_dist);
-    return colour;
 }
 
 // emit n photons from light source
-void
-Scene::emit(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags, bool is_caustic) {
+void Scene::emit(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags,
+                 bool is_caustic) {
     for (Light *light : lights) {
         for (int i = 0; i < n; i++) {
             if (is_caustic) {
@@ -269,117 +296,6 @@ void Scene::trace_caustic_photon(int depth, vector<double> &points, vector<Photo
         Photon photon = Photon(ray, light->intensity, "caustic");
         trace_photon(photon, depth, points, photons, tags);
     }
-}
-
-void Scene::trace_photon(Photon p, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags) {
-    if (depth <= 0) return;
-
-    Hit hit = Hit();
-    check_intersections(p.ray, hit);
-    if (hit.flag) {
-        p.ray.position = hit.position;
-
-        Material *m = hit.what->material;
-        // only store if it's a diffuse object
-        if (m->kd != 0) {
-            store_photon(p, points, photons, tags);
-        }
-
-        // only record shadow photons in the global map
-        if (p.type != "caustic") {
-            // test intersections with each object and store shadow photons there
-            distribute_shadow_photons(p, points, photons, tags);
-        }
-
-        // Russian Roulette
-        float probability = Utils::get_random_number(0, 1);
-        if (probability <= m->kd) {
-            // According to grammar, caustic photons terminate at diffuse bounce
-            if (p.type == "caustic") return;
-
-            // diffuse reflection
-            p.ray.direction = Utils::random_direction(hit.normal, M_PI);
-            p.colour = m->base_colour(hit) / m->kd;
-            trace_photon(p, depth - 1, points, photons, tags);
-        } else if (probability <= m->kd + m->ks) {
-            // specular reflection
-            hit.normal.reflection(p.ray.direction, p.ray.direction);
-            p.colour = m->base_colour(hit) / m->ks;
-            trace_photon(p, depth - 1, points, photons, tags);
-        } else if (probability <= m->kd + m->ks + m->t) {
-            // transmit
-            if (p.type != "caustic") return;
-
-            float cos_i = max(-1.f, min(p.ray.direction.dot(hit.normal), 1.f));
-            Ray refraction_ray = Ray();
-            refraction_ray.direction = refract(p.ray.direction, hit.normal, hit.what->material->ior, cos_i);
-            refraction_ray.direction.normalise();
-
-            Vector shift_bias = 0.001 * hit.normal;
-            refraction_ray.position = cos_i < 0 ? hit.position + -shift_bias : hit.position + shift_bias;
-            p.ray = refraction_ray;
-            p.colour = m->base_colour(hit) / m->t;
-            trace_photon(p, depth - 1, points, photons, tags);
-        } else {
-            // absorbed
-            return;
-        }
-    }
-}
-
-// gather k nearest neighbour photons
-vector<Photon *> Scene::gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons) {
-    // boilerplate code to query kd tree from ALGLIB
-    vector<double> point = {p.x, p.y, p.z};
-    real_1d_array x;
-    x.setcontent(3, point.data());
-    kdtreequeryknn(tree, x, k);
-    real_2d_array r = "[[]]";
-    integer_1d_array output_tags = "[]";
-    kdtreequeryresultstags(tree, output_tags);
-
-    vector<Photon *> local_photons;
-    for (int i = 0; i < k; i++) {
-        local_photons.push_back(&photons[output_tags[i]]);
-    }
-    return local_photons;
-}
-
-// function to test if photons surrounding hit are shadow photons
-bool Scene::in_shadow(const Hit &hit, int k, vector<Photon *> &local_photons) {
-    int counter = 0;
-    for (Photon *p : local_photons) {
-        if (p->type == "shadow") counter++;
-    }
-    if (counter >= (k / 2)) {
-        return true;
-    }
-    return false;
-}
-
-void
-Scene::distribute_shadow_photons(const Photon &p, vector<double> &points, vector<Photon> &photons, vector<long> &tags) {
-    for (Object *obj : objects) {
-        Hit shadow_photon_hit = Hit();
-        obj->intersection(p.ray, shadow_photon_hit);
-        if (shadow_photon_hit.flag) {
-            Photon shadow = Photon(Ray(shadow_photon_hit.position, p.ray.direction), Vector(), "shadow");
-            store_photon(shadow, points, photons, tags);
-        }
-    }
-}
-
-void
-Scene::store_photon(Photon p, vector<double> &points, vector<Photon> &photons, vector<long> &tags) {
-    p.ray.direction.negate();
-    photons.push_back(p);
-    // finding the index of the photon, and then pushing to array so it can be accessed later
-    tags.push_back(points.size() / 3);
-
-    // store points individually due to limitation with ALGLIB
-    points.push_back(p.ray.position.x);
-    points.push_back(p.ray.position.y);
-    points.push_back(p.ray.position.z);
 }
 
 Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index, float cos_i) {
@@ -478,65 +394,4 @@ bool Scene::object_occluded(vector<Object *> &objects, Vertex &hit_position, Ver
             return true;
     }
     return false;
-}
-
-void Scene::build_kd_tree(vector<double> &points, kdtree &tree, vector<long> &tags) {
-    // boilerplate code
-    // converting points vector so that it can be stored in tree through ALGLIB
-    real_2d_array matrix;
-    matrix.attach_to_ptr(points.size() / 3, 3, points.data());
-    ae_int_t nx = 3;
-    ae_int_t ny = 0;
-    ae_int_t normtype = 2;
-    real_1d_array x;
-    integer_1d_array input;
-    input.setcontent(points.size() / 3, tags.data());
-    kdtreebuildtagged(matrix, input, nx, ny, normtype, tree);
-}
-
-
-void Scene::load_map_from_file(kdtree &tree, const char *tree_filename, vector<Photon> &photons,
-                               const char *photons_filename) {
-    ifstream tree_file(tree_filename);
-    stringstream buffer;
-    buffer << tree_file.rdbuf();
-    tree_file.close();
-
-    //deserialise file into tree
-    kdtreeunserialize(buffer, tree);
-
-    ifstream photons_file(photons_filename, ios::in);
-    string line;
-    while (getline(photons_file, line)) {
-        vector<string> photon_line = Utils::split_string(line);
-        Vector colour = Vector(stof(photon_line[0]), stof(photon_line[1]), stof(photon_line[2]));
-        Vector direction = Vector(stof(photon_line[3]), stof(photon_line[4]), stof(photon_line[5]));
-        Vertex position = Vertex(stof(photon_line[6]), stof(photon_line[7]), stof(photon_line[8]));
-        string type = photon_line[9];
-        Photon photon = Photon(Ray(position, direction), colour, type);
-        photons.push_back(photon);
-    }
-}
-
-void Scene::save_map_to_file(kdtree &tree, const char *tree_filename, vector<Photon> &photons,
-                             const char *photons_filename) {
-    stringstream ss;
-    kdtreeserialize(tree, ss);
-    ofstream tree_file;
-    tree_file.open(tree_filename, ios::out);
-    tree_file << ss.str();
-    tree_file.close();
-
-    //serialise photon
-    ofstream photons_file(photons_filename, ios::out);
-    for (size_t i = 0; i < photons.size(); i++) {
-        photons_file << photons[i].colour.x << "\t" << photons[i].colour.y << "\t" << photons[i].colour.z << "\t"
-                     << photons[i].ray.direction.x << "\t" << photons[i].ray.direction.y << "\t"
-                     << photons[i].ray.direction.z << "\t"
-                     << photons[i].ray.position.x << "\t" << photons[i].ray.position.y << "\t"
-                     << photons[i].ray.position.z
-                     << "\t"
-                     << photons[i].type << "\r\n";
-    }
-    photons_file.close();
 }
