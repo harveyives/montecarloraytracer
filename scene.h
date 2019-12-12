@@ -21,7 +21,6 @@ public:
     vector<Object *> objects;
     vector<Light *> lights;
     float ka;
-    bool photon_mapping;
     vector<Photon> photons_global;
     vector<Photon> photons_caustic;
     vector<double> points_global;
@@ -31,7 +30,7 @@ public:
     kdtree tree_global;
     kdtree tree_caustic;
 
-    Scene(float ambient, bool mapping, bool generate_photon_map);
+    Scene(float ambient, bool generate_photon_map);
 
     Hit check_intersections(Ray &ray, Hit &hit);
 
@@ -49,7 +48,7 @@ public:
 
     vector<Photon *> gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons);
 
-    Vector estimate_radiance(Ray &ray, Hit &hit, kdtree &tree, int neighbours, vector<Photon> &photons);
+    Vector estimate_radiance(Ray &ray, Hit &hit, kdtree &tree, vector<Photon> &photons, vector<Photon *> local_photons);
 
     void build_kd_tree(vector<double> &points, kdtree &tree, vector<long> &tags);
 
@@ -60,5 +59,12 @@ public:
                             const char *photons_filename);
 
     void emit_caustic(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
+
+    void store_photon(Photon p, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
+
+    bool in_shadow(const Hit &hit, int k, vector<Photon *> &local_photons);
+
+    void
+    distribute_shadow_photons(const Photon &p, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
 };
 #endif //CODE_SCENE_H

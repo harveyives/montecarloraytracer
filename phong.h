@@ -19,7 +19,7 @@ public:
         e = emissive;
     }
 
-    Vector compute_base_colour(Hit &hit) override {
+    Vector base_colour(Hit &hit) override {
         return colour;
     }
 };

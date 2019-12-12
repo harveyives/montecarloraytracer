@@ -181,7 +181,7 @@ void PolyMesh::intersection(Ray ray, Hit &hit) {
 }
 
 void PolyMesh::compute_vertex_normals() {
-    // collect neighbouring normals on faces and normalise to find vertex normal
+    // collect neighbouring face normals normals and normalise to find vertex normal
     for (int i = 0; i < triangle_count; i++) {
         for (int j = 0; j < 3; j++) {
             vertex_normal[triangles[i][j]] = vertex_normal[triangles[i][j]] + face_normal[i];

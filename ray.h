@@ -24,4 +24,8 @@ public:
 		position = p;
 		direction = d;
 	}
+
+    Vertex get_point(float t) {
+        return position + t * direction;
+    }
 };

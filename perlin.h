@@ -33,12 +33,13 @@ public:
             150, 254, 138, 236, 205, 93, 222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180
     };
 
-    Perlin();
+    Perlin(float turbulence_power, float turbulence_size, float x_period, float y_period);
     float fade(double t);
     float noise(float x, float y, float z);
     float turbulence(float x, float y, float z, float scale);
     float gradient(int hash, double x, double y, double z);
-    Vector sample(int i, int j, int turbulence_power, int turbulence_size, int x_period, int y_period);
+
+    Vector sample(int i, int j, float turbulence_power, float turbulence_size, float x_period, float y_period);
 };
 
 #endif //CODE_PERLIN_H

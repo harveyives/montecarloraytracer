@@ -7,24 +7,20 @@ using namespace std;
 // Perlin Noise by Ken Perlin
 // https://mrl.nyu.edu/~perlin/noise/
 // with advice from https://lodev.org/cgtutor/randomnoise.html
-Perlin::Perlin() {
+Perlin::Perlin(float turbulence_power, float turbulence_size, float x_period, float y_period) {
     // convert permutations to be within colour range 0-255
     for (int i = 0; i < permutations_original.size(); i++)
         permutations[i] = permutations_original[i % 256];
 
+    // building noise array
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < n; j++) {
-            int turbulence_power = 2;
-            int turbulence_size = 256;
-            int x_period = 5 / n;
-            int y_period = 2 / n;
-
-            matrix[i][j] = sample(i, j, turbulence_power, turbulence_size, x_period, y_period);
+            matrix[i][j] = sample(i, j, turbulence_power, turbulence_size, x_period / n, y_period / n);
         }
     }
 }
 
-Vector Perlin::sample(int i, int j, int turbulence_power, int turbulence_size, int x_period, int y_period) {
+Vector Perlin::sample(int i, int j, float turbulence_power, float turbulence_size, float x_period, float y_period) {
     // generate output value
     float val = fabs(sin(x_period * i / n + y_period * j / n + turbulence_power * turbulence(j, i, 0.8, turbulence_size) * M_PI));
     return Vector(val, val, val);

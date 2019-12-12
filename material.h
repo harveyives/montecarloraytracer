@@ -27,7 +27,7 @@ public:
         e = emissive;
     }
 
-    virtual Vector compute_light_colour(Vector &view, Vector &light_direction, Vector &normal, Vector base_colour) {
+    virtual Vector light_colour(Vector &view, Vector &light_direction, Vector &normal, Vector base_colour) {
         Vector result = Vector();
 
         // diffuse
@@ -56,7 +56,7 @@ public:
         return result;
     };
 
-    virtual Vector compute_base_colour(Hit &hit) = 0;
+    virtual Vector base_colour(Hit &hit) = 0;
 
     virtual bool is_emissive() {
         return (e.x != 0 && e.y != 0 && e.z != 0);

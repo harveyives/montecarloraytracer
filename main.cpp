@@ -21,8 +21,7 @@ using namespace std;
 int main(int argc, char *argv[]) {
     int width = stoi(argv[1]);
     int height = stoi(argv[2]);
-    bool photon_mapping = stoi(argv[3]);
-    bool generate_photon_map = stoi(argv[4]);
+    bool generate_photon_map = stoi(argv[3]);
 
     // Create a framebuffer
     FrameBuffer *fb = new FrameBuffer(width, height);
@@ -31,15 +30,14 @@ int main(int argc, char *argv[]) {
     Vertex look = Vertex(0, 0, 1);
     Vector up = Vector(0, 1, 0);
     Camera *camera = new Camera(eye, look, up, 1, 50, height, width);
-    Scene *scene = new Scene(0.6, photon_mapping, generate_photon_map);
+    Scene *scene = new Scene(0.6, generate_photon_map);
 
-    // start timer.
+    // starting timer...
     clock_t start;
     double time;
 
     start = clock();
     cout << "Tracing... " << endl;
-//    #pragma omp parallel for collapse(2)
     for (int c = 0; c < width; c++) {
         for (int r = 0; r < height; r++) {
             Ray ray = Ray(eye, camera->get_ray_direction(c, r));
@@ -49,7 +47,7 @@ int main(int argc, char *argv[]) {
         }
     }
     cout << "DONE" << endl;
-    time = (clock() - start) / (double) CLOCKS_PER_SEC;
+    time = (clock() - start) / ((double) CLOCKS_PER_SEC);
 
     std::cout << "printf: " << time << '\n';
 
