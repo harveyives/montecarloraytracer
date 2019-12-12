@@ -10,8 +10,9 @@
 using namespace std;
 
 // Class used to model marble, wood, clouds textures that can be sampled for texturing objects
-// Perlin Noise by Ken Perlin
+// A C++ implementation of Ken Perlin's java implementation of perlin noise.
 // https://mrl.nyu.edu/~perlin/noise/
+// with advice from https://lodev.org/cgtutor/randomnoise.html
 class Perlin {
 public:
     // resolution
@@ -39,7 +40,7 @@ public:
     float turbulence(float x, float y, float z, float scale);
     float gradient(int hash, double x, double y, double z);
 
-    Vector sample(int i, int j, float turbulence_power, float turbulence_size, float x_period, float y_period);
+    Vector get_pixel(int i, int j, float turbulence_power, float turbulence_size, float x_period, float y_period);
 };
 
 #endif //CODE_PERLIN_H

@@ -34,7 +34,7 @@ public:
         long double max_x = abs(obj->max_limit_x);
         long double max_y = abs(obj->max_limit_y);
 
-        // find ratio of hit position within entire object
+        // find ratio of hit position with respect to entire object
         long double scaled_x = fabs((hit.position.x + min_x) / (min_x + max_x));
         long double scaled_y = fabs((hit.position.y + min_y) / (min_y + max_y));
 

@@ -44,7 +44,7 @@ public:
 
     void trace_photon(Photon p, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
 
-    void emit(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
+    void emit(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags, bool is_caustic);
 
     vector<Photon *> gather_photons(Vertex p, int k, kdtree &tree, vector<Photon> &photons);
 
@@ -66,5 +66,11 @@ public:
 
     void
     distribute_shadow_photons(const Photon &p, vector<double> &points, vector<Photon> &photons, vector<long> &tags);
+
+    void
+    trace_default_photon(int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags, Light *light);
+
+    void
+    trace_caustic_photon(int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags, Light *light);
 };
 #endif //CODE_SCENE_H

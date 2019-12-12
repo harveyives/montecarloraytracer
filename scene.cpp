@@ -24,14 +24,14 @@ Scene::Scene(float ambient, bool generate_photon_map) {
 
     // Adding objects:
     // Polys
-    Marble *perlin = new Marble({255, 255, 255}, 0, 0.9, 1, 0, 0);
+    Marble *marble = new Marble({255, 255, 255}, 0, 0.9, 1, 0, 0);
     Transform *transform = new Transform(
             3.5, 0, 0, -3,
             0, 0, 3.5, -15,
             0, 3.5, 0, 50,
             0, 0, 3, 1
     );
-    PolyMesh *teapot = new PolyMesh((char *) "teapot.ply", transform, perlin);
+    PolyMesh *teapot = new PolyMesh((char *) "teapot.ply", transform, marble);
     Transform *transform_cube = new Transform(
             5, 0, 0, -12,
             0, 0, 5, -12,
@@ -90,9 +90,9 @@ Scene::Scene(float ambient, bool generate_photon_map) {
 
     if (generate_photon_map) {
         // emit photons into scene, build tree from intersections, then save to a file
-        cout << "Generating new photon matrix...  " << endl;
-        emit(50000, 50, points_global, photons_global, tags_global);
-        emit_caustic(10000, 50, points_caustic, photons_caustic, tags_caustic);
+        cout << "Generating new photon map...  " << endl;
+        emit(50000, 50, points_global, photons_global, tags_global, false);
+        emit(10000, 50, points_caustic, photons_caustic, tags_caustic, true);
         build_kd_tree(points_global, tree_global, tags_global);
         build_kd_tree(points_caustic, tree_caustic, tags_caustic);
         cout << "DONE" << endl;
@@ -120,8 +120,7 @@ Vector Scene::trace(Ray &ray, int depth) {
 
     Vector emissive, global, caustic;
 
-    // if photon mapping then sample radiance, otherwise use regular base colour
-    int k = 600;
+    int k = 700;
     vector<Photon *> local_photons = gather_photons(hit.position, k, tree_global, photons_global);
     int d = 200;
     vector<Photon *> local_photons_caustic = gather_photons(hit.position, d, tree_caustic, photons_caustic);
@@ -140,13 +139,12 @@ Vector Scene::trace(Ray &ray, int depth) {
 
     if (hit.flag) {
         for (Light *light : lights) {
-            // if area shaded
+            // if not many shadow photons, don't need to test for shadows
             if (in_shadow(hit, k, local_photons)) {
                 if (object_occluded(objects, hit.position, light->position)) {
                     continue;
                 }
             }
-
 
             //get light direction based on point if point light, otherwise get directional light
             Vector light_direction = light->get_direction(hit.position);
@@ -216,22 +214,22 @@ Scene::estimate_radiance(Ray &ray, Hit &hit, kdtree &tree, vector<Photon> &photo
         // calculate photon contribution based on brdf and photon intensity
         colour += p->colour * m->light_colour(ray.direction, p->ray.direction, hit.normal, base_colour) * gaussian;
     }
-    // divide through by max volume of sphere sampled within
+    // divide through by max volume of disc sampled within
     colour = colour / (M_PI * max_dist * max_dist);
     return colour;
 }
 
 // emit n photons from light source
-void Scene::emit(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags) {
+void
+Scene::emit(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags, bool is_caustic) {
     for (Light *light : lights) {
-        // emit photons from light in random direction downwards from light
-        for (int i = 0; i < n_global; i++) {
-            Vector direction = Utils::random_direction(light->direction, M_PI / 2);
-            Ray ray = Ray(light->get_position(), direction);
-            Photon photon = Photon(ray, light->intensity, "default");
-            trace_photon(photon, depth, points, photons, tags);
+        for (int i = 0; i < n; i++) {
+            if (is_caustic) {
+                trace_caustic_photon(depth, points, photons, tags, light);
+            } else {
+                trace_default_photon(depth, points, photons, tags, light);
+            }
         }
-
         for (Photon p: photons) {
             // scale by number of photons from light
             p.colour = p.colour / n;
@@ -239,35 +237,37 @@ void Scene::emit(int n, int depth, vector<double> &points, vector<Photon> &photo
     }
 }
 
-// emit n caustic photons from light source - slightly different behaviour using projection map
-void Scene::emit_caustic(int n, int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags) {
-    for (Light *light : lights) {
-        for (int i = 0; i < n; i++) {
-            for (Object *obj : objects) {
-                // if object not transmissive, skip
-                if (obj->material->t == 0) continue;
+// generates photon in random direction based on the surface of the light
+void Scene::trace_default_photon(int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags,
+                                 Light *light) {
+    Vector direction = Utils::random_direction(light->direction, M_PI / 2);
+    Ray ray = Ray(light->get_position(), direction);
+    Photon photon = Photon(ray, light->intensity, "default");
+    trace_photon(photon, depth, points, photons, tags);
+}
 
-                // calculate vector to object
-                Vector to_obj = obj->centre - light->position;
-                float distance = to_obj.magnitude();
-                to_obj.normalise();
+// traces caustic photons, which behave slighly differently because they're projection mapped
+void Scene::trace_caustic_photon(int depth, vector<double> &points, vector<Photon> &photons, vector<long> &tags,
+                                 Light *light) {
+    for (Object *obj : objects) {
+        // if object not transmissive, skip
+        if (obj->material->t == 0) continue;
 
-                //calculate angle of right angle triangle from light to object
-                float cone_angle = atan(obj->radius / distance);
+        // calculate vector to object
+        Vector to_obj = obj->centre - light->position;
+        float distance = to_obj.magnitude();
+        to_obj.normalise();
 
-                // use angle to generate vector within the cone from light to object, containing the object
-                Vector direction = Utils::random_direction(to_obj, cone_angle);
-                Ray ray = Ray(light->get_position(), direction);
+        //calculate angle of right angle triangle from light to object
+        float cone_angle = atan(obj->radius / distance);
 
-                // specify caustic photon to change behaviour on types of bounce possible
-                Photon photon = Photon(ray, light->intensity, "caustic");
-                trace_photon(photon, depth, points, photons, tags);
-            }
-        }
-        // scale by number of photons from light
-        for (Photon p: photons) {
-            p.colour = p.colour / n;
-        }
+        // use angle to generate vector within the cone from light to object, containing the object
+        Vector direction = Utils::random_direction(to_obj, cone_angle);
+        Ray ray = Ray(light->get_position(), direction);
+
+        // specify caustic photon to change behaviour on types of bounce possible
+        Photon photon = Photon(ray, light->intensity, "caustic");
+        trace_photon(photon, depth, points, photons, tags);
     }
 }
 
@@ -345,6 +345,7 @@ vector<Photon *> Scene::gather_photons(Vertex p, int k, kdtree &tree, vector<Pho
     return local_photons;
 }
 
+// function to test if photons surrounding hit are shadow photons
 bool Scene::in_shadow(const Hit &hit, int k, vector<Photon *> &local_photons) {
     int counter = 0;
     for (Photon *p : local_photons) {
@@ -354,7 +355,6 @@ bool Scene::in_shadow(const Hit &hit, int k, vector<Photon *> &local_photons) {
         return true;
     }
     return false;
-
 }
 
 void
@@ -406,6 +406,7 @@ Vector Scene::refract(Vector incident_ray, Vector normal, float refractive_index
 
 // Fresnel Equations as per wikipedia.
 // https://en.wikipedia.org/wiki/Fresnel_equations
+// with advice from https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel
 float Scene::fresnel(float refractive_index, float cos_i) {
     float n1, n2;
 

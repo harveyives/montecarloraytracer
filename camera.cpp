@@ -24,8 +24,8 @@ Camera::Camera(Vertex eye, Vertex look, Vector up, double d, float fov, int heig
     half_width = tan(fov_radians);
     half_height = aspect_ratio * half_width;
 
-    pixel_width = half_width * 2 / (width - 1.0);
-    pixel_height = half_height * 2 / (height - 1.0);
+    pixel_width = half_width * 2 / (width - 1);
+    pixel_height = half_height * 2 / (height - 1);
 }
 
 Vector Camera::get_ray_direction(int x, int y) {
