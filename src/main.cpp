@@ -53,6 +53,6 @@ int main(int argc, char *argv[]) {
 
     //   Output the framebuffer.
     cout << "Outputting..." << endl;
-    fb->writeRGBFile((char *) "test.ppm");
+    fb->writeRGBFile((char *) "image.ppm");
     return 0;
 }
