@@ -32,13 +32,13 @@ Scene::Scene(float ambient, bool generate_photon_map) {
             0, 3.5, 0, 50,
             0, 0, 3, 1
     );
-    PolyMesh *teapot = new PolyMesh((char *) "teapot.ply", transform, marble);
+    PolyMesh *teapot = new PolyMesh((char *) "ply/teapot.ply", transform, marble);
     Transform *transform_cube = new Transform(
             5, 0, 0, -12,
             0, 0, 5, -12,
             0, 5, 0, 50,
             0, 0, 10, 1);
-    PolyMesh *cube = new PolyMesh((char *) "cube.ply", transform_cube,
+    PolyMesh *cube = new PolyMesh((char *) "ply/cube.ply", transform_cube,
                                   new Phong({255, 255, 255}, 0.8, 0.1, 1.01, 1.3, 0.99));
 
     // area lights modelled as objects to leverage pre-existing code
@@ -48,7 +48,7 @@ Scene::Scene(float ambient, bool generate_photon_map) {
             0, 6, 0, 40,
             0, 0, 6, 1
     );
-    PolyMesh *area_light_obj = new PolyMesh((char *) "area_light.ply", transform_light,
+    PolyMesh *area_light_obj = new PolyMesh((char *) "ply/area_light.ply", transform_light,
                                             new Phong({255, 255, 255}, 0, 0, 1, 0, 0, {255, 255, 255}));
 
     // Spheres
