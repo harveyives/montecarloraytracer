@@ -1,6 +1,6 @@
 # Monte Carlo Raytracer
 <p align="middle">
-    <img width="90%" src="img/finalimage.png">
+    <img width="90%" src="https://github.com/harveyives/montecarloraytracer/blob/master/img/finalimage.png?raw=true">
 </p>
 
 ## What am I looking at?
