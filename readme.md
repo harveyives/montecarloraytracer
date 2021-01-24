@@ -1,5 +1,5 @@
 # Monte Carlo Raytracer
-!(rendered scene in cornell box)[https://github.com/harveyives/montecarloraytracer/blob/master/img/finalimage.png?raw=true]
+![rendered scene in cornell box](https://github.com/harveyives/montecarloraytracer/blob/master/img/finalimage.png?raw=true)
 
 ## What am I looking at?
 
